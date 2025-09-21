@@ -52,6 +52,7 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   const [isGeneratingReport, startReportGeneration] = useTransition();
   const [isTranslating, startTranslation] = useTransition();
   const [interviewFinished, setInterviewFinished] = useState(false);
+  const [isFetchingInitial, setIsFetchingInitial] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
 
@@ -102,10 +103,11 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
 
   useEffect(() => {
     // Start the interview with the first question only if no messages exist
-    if (messages.length === 0) {
+    if (messages.length === 0 && !isFetchingInitial) {
+      setIsFetchingInitial(true);
       fetchNextQuestion([]);
     }
-  }, []);
+  }, [messages, isFetchingInitial]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {

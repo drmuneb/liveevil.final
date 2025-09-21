@@ -36,7 +36,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      age: undefined,
+      age: '' as any,
       chiefComplaint: '',
     },
   });

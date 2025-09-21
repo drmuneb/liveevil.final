@@ -30,7 +30,7 @@ const prompt = ai.definePrompt({
   - You will also be given the conversation history between you (model) and the patient (user).
   - Your task is to generate the *next logical question* to ask.
   - All questions and options must be in both English and Persian (Farsi).
-  - You can provide multiple-choice options for the user where it makes sense. This helps guide the conversation.
+  - You should provide multiple-choice options for the user where it makes sense. This helps guide the conversation.
   - Review the entire conversation. Do not ask questions that have already been answered.
   - If you believe you have sufficient information to make a differential diagnosis, set 'isComplete' to true and do not provide a 'nextQuestion'. Otherwise, set 'isComplete' to false.
   - Keep questions relatively simple and focused.

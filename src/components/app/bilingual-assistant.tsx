@@ -52,7 +52,6 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   const [isGeneratingReport, startReportGeneration] = useTransition();
   const [isTranslating, startTranslation] = useTransition();
   const [interviewFinished, setInterviewFinished] = useState(false);
-  const [isFetchingInitial, setIsFetchingInitial] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
 
@@ -61,11 +60,6 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   const patientInfoString = `Name: ${patientDetails.name}, Age: ${patientDetails.age}, Gender: ${patientDetails.gender}, DOB: ${patientDetails.dob.toDateString()}, Chief Complaint: ${patientDetails.chiefComplaint}, Consciousness: ${patientDetails.consciousnessLevel}`;
 
   const fetchNextQuestion = (history: Message[]) => {
-    // Do not fetch next question if the last message is already a question
-    if (history.length > 0 && history[history.length - 1].type === 'question') {
-      return;
-    }
-
     startGeneration(async () => {
       const conversation = history.map(m => ({
         role: m.type === 'question' ? 'model' : 'user',
@@ -100,14 +94,15 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
       }
     });
   };
-
+  
   useEffect(() => {
-    // Start the interview with the first question only if no messages exist
-    if (messages.length === 0 && !isFetchingInitial) {
-      setIsFetchingInitial(true);
+    // Start the interview with the first question only if no messages exist.
+    if (messages.length === 0) {
       fetchNextQuestion([]);
     }
-  }, [messages, isFetchingInitial]);
+    // We only want this to run a single time when the component is first mounted.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (scrollAreaRef.current) {

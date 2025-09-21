@@ -104,7 +104,7 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [messages, isGenerating]);
 
 
   const handleAnswerSubmit = (answerText?: string) => {
@@ -172,6 +172,8 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   }
 
   const interviewStarted = messages.length > 0;
+  const lastMessage = messages.length > 0 ? messages[messages.length-1] : null;
+  const isLastMessageQuestion = lastMessage?.type === 'question';
 
   return (
     <div className="grid gap-8">
@@ -201,7 +203,11 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
                                         <AvatarFallback className='bg-transparent'><Sparkles className="h-5 w-5 text-primary" /></AvatarFallback>
                                     </Avatar>
                                 )}
-                                <div className={cn("rounded-lg p-3 max-w-[80%]", msg.type === 'question' ? 'bg-secondary' : 'bg-primary text-primary-foreground')}>
+                                <div className={cn(
+                                    "rounded-lg p-3 max-w-[80%]", 
+                                    msg.type === 'question' ? 'bg-secondary' : 'bg-primary text-primary-foreground',
+                                    msg.id === lastMessage?.id && msg.type === 'question' && 'pb-0'
+                                )}>
                                     <p className="font-medium">{msg.english}</p>
                                     {msg.persian && <p className="text-sm opacity-80 mt-1">{msg.persian}</p>}
                                     
@@ -217,20 +223,10 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
                                             )}
                                         </>
                                     )}
-                                    {msg.type === 'question' && msg.options && msg.options.length > 0 && (
-                                        <div className='flex flex-wrap gap-2 mt-3'>
-                                            {msg.options.map(opt => (
-                                                <Button key={opt.english} variant='secondary' size='sm' className='h-auto' onClick={() => handleAnswerSubmit(opt.english)}>
-                                                    {opt.english}
-                                                    <span className='text-xs opacity-70 ml-2'>({opt.persian})</span>
-                                                </Button>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         ))}
-                         {isGenerating && (
+                         {isGenerating && !interviewFinished && (
                             <div className="flex items-start gap-3">
                                 <Avatar className="h-8 w-8 border border-primary/20 bg-primary/10">
                                     <AvatarFallback className='bg-transparent'><Sparkles className="h-5 w-5 text-primary" /></AvatarFallback>
@@ -244,23 +240,35 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
                 </ScrollArea>
                 
                 {interviewStarted && !interviewFinished && (
-                    <div className="flex gap-2 pt-4 border-t">
-                        <Textarea
-                            placeholder="Enter patient's answer here, or select an option above..."
-                            value={currentAnswer}
-                            onChange={(e) => setCurrentAnswer(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleAnswerSubmit();
-                                }
-                            }}
-                            className="min-h-[40px]"
-                            disabled={isGenerating}
-                        />
-                        <Button onClick={() => handleAnswerSubmit()} disabled={!currentAnswer.trim() || isGenerating} size="icon">
-                            <Send />
-                        </Button>
+                    <div className="flex flex-col gap-3 pt-4 border-t">
+                        {isLastMessageQuestion && lastMessage.options && lastMessage.options.length > 0 && (
+                            <div className='flex flex-wrap gap-2'>
+                                {lastMessage.options.map(opt => (
+                                    <Button key={opt.english} variant='outline' size='sm' className='h-auto' onClick={() => handleAnswerSubmit(opt.english)}>
+                                        {opt.english}
+                                        <span className='text-xs opacity-70 ml-2'>({opt.persian})</span>
+                                    </Button>
+                                ))}
+                            </div>
+                        )}
+                        <div className="flex gap-2">
+                            <Textarea
+                                placeholder="Describe your answer here..."
+                                value={currentAnswer}
+                                onChange={(e) => setCurrentAnswer(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleAnswerSubmit();
+                                    }
+                                }}
+                                className="min-h-[40px]"
+                                disabled={isGenerating || !isLastMessageQuestion}
+                            />
+                            <Button onClick={() => handleAnswerSubmit()} disabled={!currentAnswer.trim() || isGenerating || !isLastMessageQuestion} size="icon">
+                                <Send />
+                            </Button>
+                        </div>
                     </div>
                 )}
                  {interviewFinished && (

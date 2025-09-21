@@ -1,20 +1,20 @@
 'use client';
 
-import React, { useRef, useState, useTransition } from 'react';
+import React, { useEffect, useRef, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2, Sparkles, Upload, User } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, differenceInYears, differenceInMonths, differenceInDays, addYears, addMonths } from 'date-fns';
 import type { PatientDetails } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { handleAnalyzeDocument } from '@/lib/actions';
@@ -33,8 +33,19 @@ type PatientDetailsFormProps = {
   className?: string;
 };
 
+function calculateAge(dob: Date): { years: number; months: number; days: number; } {
+    const now = new Date();
+    const years = differenceInYears(now, dob);
+    const pastYearDate = addYears(dob, years);
+    const months = differenceInMonths(now, pastYearDate);
+    const pastMonthDate = addMonths(pastYearDate, months);
+    const days = differenceInDays(now, pastMonthDate);
+    return { years, months, days };
+}
+
 export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFormProps) {
   const [isAnalyzing, startAnalyzing] = useTransition();
+  const [calculatedAge, setCalculatedAge] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -49,6 +60,28 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
       consciousnessLevel: undefined,
     },
   });
+
+  const dobValue = form.watch('dob');
+
+  useEffect(() => {
+    if (dobValue) {
+      const age = calculateAge(dobValue);
+      let ageString = '';
+      if (age.years > 0) ageString += `${age.years} year${age.years > 1 ? 's' : ''}`;
+      if (age.months > 0) ageString += ` ${age.months} month${age.months > 1 ? 's' : ''}`;
+      if (age.days > 0) ageString += ` ${age.days} day${age.days > 1 ? 's' : ''}`;
+      
+      setCalculatedAge(ageString.trim());
+      
+      // Also update the hidden age field
+      if (form.getValues('age') !== age.years) {
+          form.setValue('age', age.years, { shouldValidate: true });
+      }
+    } else {
+        setCalculatedAge(null);
+    }
+  }, [dobValue, form]);
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -141,47 +174,12 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="age"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Age</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="e.g., 42" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
                <FormField
-                control={form.control}
-                name="gender"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
                 control={form.control}
                 name="dob"
                 render={({ field }) => (
                   <FormItem className="flex flex-col pt-2">
-                    <FormLabel>Date of Birth (Georgian)</FormLabel>
+                    <FormLabel>Date of Birth</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -207,6 +205,44 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
                         />
                       </PopoverContent>
                     </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="age"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Age</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="e.g., 42" {...field} className='hidden'/>
+                    </FormControl>
+                    <div className='flex items-center h-10 rounded-md border border-input bg-background px-3 py-2 text-sm'>
+                        {calculatedAge || <span className='text-muted-foreground'>Calculated from DOB</span>}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gender</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -60,6 +60,11 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   const patientInfoString = `Name: ${patientDetails.name}, Age: ${patientDetails.age}, Gender: ${patientDetails.gender}, DOB: ${patientDetails.dob.toDateString()}, Chief Complaint: ${patientDetails.chiefComplaint}, Consciousness: ${patientDetails.consciousnessLevel}`;
 
   const fetchNextQuestion = (history: Message[]) => {
+    // Do not fetch next question if the last message is already a question
+    if (history.length > 0 && history[history.length - 1].type === 'question') {
+      return;
+    }
+
     startGeneration(async () => {
       const conversation = history.map(m => ({
         role: m.type === 'question' ? 'model' : 'user',
@@ -96,8 +101,10 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   };
 
   useEffect(() => {
-    // Start the interview with the first question
-    fetchNextQuestion([]);
+    // Start the interview with the first question only if no messages exist
+    if (messages.length === 0) {
+      fetchNextQuestion([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -116,12 +123,14 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
         type: 'answer',
         english: answer,
     };
-
-    const nextMessages = [...messages, newAnswer];
-    setMessages(nextMessages);
+    
+    // Add the new answer to messages first
+    const updatedMessages = [...messages, newAnswer];
+    setMessages(updatedMessages);
     setCurrentAnswer('');
 
-    fetchNextQuestion(nextMessages);
+    // Then fetch the next question based on the history that includes the new answer
+    fetchNextQuestion(updatedMessages);
   };
   
   const generateReport = () => {
@@ -206,7 +215,6 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
                                 <div className={cn(
                                     "rounded-lg p-3 max-w-[80%]", 
                                     msg.type === 'question' ? 'bg-secondary' : 'bg-primary text-primary-foreground',
-                                    msg.id === lastMessage?.id && msg.type === 'question' && 'pb-0'
                                 )}>
                                     <p className="font-medium">{msg.english}</p>
                                     {msg.persian && <p className="text-sm opacity-80 mt-1">{msg.persian}</p>}
@@ -244,7 +252,7 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
                         {isLastMessageQuestion && lastMessage.options && lastMessage.options.length > 0 && (
                             <div className='flex flex-wrap gap-2'>
                                 {lastMessage.options.map(opt => (
-                                    <Button key={opt.english} variant='outline' size='sm' className='h-auto' onClick={() => handleAnswerSubmit(opt.english)}>
+                                    <Button key={opt.english} variant='outline' size='sm' className='h-auto bg-background hover:bg-primary/10 hover:border-primary border-input transition-all' onClick={() => handleAnswerSubmit(opt.english)}>
                                         {opt.english}
                                         <span className='text-xs opacity-70 ml-2'>({opt.persian})</span>
                                     </Button>

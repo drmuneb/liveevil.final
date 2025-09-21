@@ -31,6 +31,10 @@ const GenerateBilingualQuestionsOutputSchema = z.object({
     z.object({
       english: z.string().describe('The question in English.'),
       persian: z.string().describe('The question in Persian (Farsi).'),
+      options: z.array(z.object({
+        english: z.string(),
+        persian: z.string(),
+      })).optional().describe('An optional list of multiple-choice answers.'),
     })
   ),
 });
@@ -53,7 +57,7 @@ const prompt = ai.definePrompt({
   Patient Details: {{{patientDetails}}}
   Consciousness Level: {{{consciousnessLevel}}}
 
-  Generate a series of questions (3-5) that would be helpful in gathering information about the patient's current condition.  Make sure the questions are appropriate for the described level of consciousness.
+  Generate a series of questions (3-5) that would be helpful in gathering information about the patient's current condition.  Make sure the questions are appropriate for the described level of consciousness. For some questions, provide a few multiple choice options.
 
   The questions should be in both English and Persian. Persian is also known as Farsi.
 
@@ -63,6 +67,16 @@ const prompt = ai.definePrompt({
       {
         "english": "Can you describe the pain you are experiencing?",
         "persian": "میتوانید دردی را که تجربه میکنید، شرح دهید؟"
+      },
+      {
+        "english": "What is the nature of the pain?",
+        "persian": "ماهیت درد چگونه است؟",
+        "options": [
+          { "english": "Sharp", "persian": "تیز" },
+          { "english": "Dull", "persian": "کند" },
+          { "english": "Throbbing", "persian": "ضربان دار" },
+          { "english": "Burning", "persian": "سوزناک" }
+        ]
       },
       {
         "english": "Do you have any allergies to medications?",

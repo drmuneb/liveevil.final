@@ -1,24 +1,23 @@
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import {
-  handleGenerateQuestions,
   handleGenerateReport,
   handleTranslate,
+  handleGenerateNextQuestion,
 } from '@/lib/actions';
 import type {
   DifferentialDiagnoses,
   PatientDetails,
-  Question,
   SoapNote,
   TreatmentPlan,
 } from '@/lib/types';
-import { Bot, Languages, Loader2, Send } from 'lucide-react';
+import { Bot, Loader2, Send, Sparkles } from 'lucide-react';
 import { SoapNoteDisplay } from './soap-note-display';
 import { DifferentialDiagnosisDisplay } from './differential-diagnosis-display';
 import { TreatmentPlanDisplay } from './treatment-plan-display';
@@ -26,6 +25,7 @@ import { Spinner } from '../ui/spinner';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { cn } from '@/lib/utils';
+import { Badge } from '../ui/badge';
 
 type BilingualAssistantProps = {
   patientDetails: PatientDetails;
@@ -37,90 +37,104 @@ type Message = {
     english: string;
     persian?: string;
     translation?: string;
+    options?: { english: string; persian: string }[];
 };
 
-
 export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [currentAnswer, setCurrentAnswer] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [currentAnswer, setCurrentAnswer] = useState('');
   
   const [soapNote, setSoapNote] = useState<SoapNote | null>(null);
   const [ddx, setDdx] = useState<DifferentialDiagnoses | null>(null);
   const [treatmentPlan, setTreatmentPlan] = useState<TreatmentPlan | null>(null);
 
-  const [isGeneratingQuestions, startQuestionGeneration] = useTransition();
+  const [isGenerating, startGeneration] = useTransition();
   const [isGeneratingReport, startReportGeneration] = useTransition();
   const [isTranslating, startTranslation] = useTransition();
+  const [interviewFinished, setInterviewFinished] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
 
   const { toast } = useToast();
 
-  const startInterview = () => {
-    startQuestionGeneration(async () => {
-      const result = await handleGenerateQuestions({
-        patientDetails: `Chief Complaint: ${patientDetails.chiefComplaint}`,
-        consciousnessLevel: patientDetails.consciousnessLevel,
+  const patientInfoString = `Name: ${patientDetails.name}, Age: ${patientDetails.age}, Gender: ${patientDetails.gender}, DOB: ${patientDetails.dob.toDateString()}, Chief Complaint: ${patientDetails.chiefComplaint}, Consciousness: ${patientDetails.consciousnessLevel}`;
+
+  const fetchNextQuestion = (history: Message[]) => {
+    startGeneration(async () => {
+      const conversation = history.map(m => ({
+        role: m.type === 'question' ? 'model' : 'user',
+        content: m.english,
+      }));
+
+      const result = await handleGenerateNextQuestion({
+        patientInformation: patientInfoString,
+        conversationHistory: conversation,
       });
-      if (result.success && result.data && result.data.questions.length > 0) {
-        const initialQuestions = result.data.questions.map((q, i) => ({ ...q, id: `q${i}` }));
-        setQuestions(initialQuestions);
-        setMessages([{
-            id: initialQuestions[0].id,
+
+      if (result.success && result.data) {
+        if (result.data.isComplete) {
+          setInterviewFinished(true);
+          toast({ title: "Interview Complete", description: "You can now generate the full report." });
+        } else if (result.data.nextQuestion) {
+          const { english, persian, options } = result.data.nextQuestion;
+          setMessages(prev => [...prev, {
+            id: `q${prev.length}`,
             type: 'question',
-            english: initialQuestions[0].english,
-            persian: initialQuestions[0].persian,
-        }]);
-        setCurrentQuestionIndex(0);
-        toast({ title: 'Interview Started', description: 'AI has created a set of questions for the patient.' });
+            english,
+            persian,
+            options,
+          }]);
+        }
       } else {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: result.error || 'Could not generate questions.',
+          description: result.error || 'Could not generate the next question.',
         });
       }
     });
   };
 
-  const handleAnswerSubmit = () => {
-    if (!currentAnswer.trim()) return;
+  useEffect(() => {
+    // Start the interview with the first question
+    fetchNextQuestion([]);
+  }, []);
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages]);
+
+
+  const handleAnswerSubmit = (answerText?: string) => {
+    const answer = (answerText || currentAnswer).trim();
+    if (!answer) return;
 
     const newAnswer: Message = {
-        id: `a${currentQuestionIndex}`,
+        id: `a${messages.filter(m => m.type === 'answer').length}`,
         type: 'answer',
-        english: currentAnswer,
+        english: answer,
     };
 
     const nextMessages = [...messages, newAnswer];
-
-    if (currentQuestionIndex < questions.length - 1) {
-        const nextQuestion = questions[currentQuestionIndex + 1];
-        nextMessages.push({
-            id: nextQuestion.id,
-            type: 'question',
-            english: nextQuestion.english,
-            persian: nextQuestion.persian,
-        });
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
-        // Last question answered
-        setCurrentQuestionIndex(questions.length);
-    }
-
     setMessages(nextMessages);
     setCurrentAnswer('');
+
+    fetchNextQuestion(nextMessages);
   };
   
   const generateReport = () => {
     startReportGeneration(async () => {
-      const patientInfoString = `Name: ${patientDetails.name}, Age: ${patientDetails.age}, Gender: ${patientDetails.gender}, DOB: ${patientDetails.dob.toDateString()}, Chief Complaint: ${patientDetails.chiefComplaint}, Consciousness: ${patientDetails.consciousnessLevel}`;
-      
-      const qaPairs = questions.map((q, i) => {
-        const questionText = q.english;
-        const answerText = messages.find(m => m.id === `a${i}`)?.english || 'Not answered';
-        return `${questionText}: ${answerText}`;
-      }).join('\n');
+      const qaPairs = messages.filter(m => m.type === 'question' || m.type === 'answer')
+        .reduce((acc, m, i, arr) => {
+            if (m.type === 'question') {
+                const qText = m.english;
+                const aText = arr[i+1]?.type === 'answer' ? arr[i+1].english : 'Not answered';
+                acc.push(`${qText}: ${aText}`);
+            }
+            return acc;
+        }, [] as string[]).join('\n');
       
       const result = await handleGenerateReport({
         patientInformation: patientInfoString,
@@ -146,7 +160,7 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
     if (!text) return;
     
     startTranslation(async () => {
-      const result = await handleTranslate({ text, targetLanguage: 'en' });
+      const result = await handleTranslate({ text, targetLanguage: 'fa' });
       if (result.success && result.data) {
         setMessages(prevMessages => prevMessages.map(m => 
             m.id === messageId ? { ...m, translation: result.data!.translatedText } : m
@@ -157,38 +171,34 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
     });
   }
 
-  const interviewStarted = questions.length > 0;
-  const interviewFinished = currentQuestionIndex >= questions.length && questions.length > 0;
+  const interviewStarted = messages.length > 0;
 
   return (
     <div className="grid gap-8">
-      {!interviewStarted ? (
+      {!interviewStarted && isGenerating ? (
         <Card className="text-center">
           <CardHeader>
-            <CardTitle>Start Consultation</CardTitle>
-            <CardDescription>Generate AI-powered questions based on the patient's chief complaint.</CardDescription>
+            <CardTitle>Starting Consultation</CardTitle>
+            <CardDescription>Generating the first question...</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button onClick={startInterview} disabled={isGeneratingQuestions}>
-              {isGeneratingQuestions ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
-              Start AI Interview
-            </Button>
+          <CardContent className='flex justify-center'>
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </CardContent>
         </Card>
       ) : (
-        <Card className="flex flex-col h-[70vh]">
+        <Card className="flex flex-col h-[75vh]">
             <CardHeader>
                 <CardTitle>Bilingual AI Assistant</CardTitle>
                 <CardDescription>Answer the questions to build the patient's report.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
-                <ScrollArea className="flex-1 pr-4">
+                <ScrollArea className="flex-1 pr-4" ref={scrollAreaRef}>
                     <div className="space-y-6">
                         {messages.map((msg) => (
                             <div key={msg.id} className={cn("flex items-start gap-3", msg.type === 'answer' && 'justify-end')}>
                                 {msg.type === 'question' && (
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarFallback><Bot size={18} /></AvatarFallback>
+                                    <Avatar className="h-8 w-8 border border-primary/20 bg-primary/10">
+                                        <AvatarFallback className='bg-transparent'><Sparkles className="h-5 w-5 text-primary" /></AvatarFallback>
                                     </Avatar>
                                 )}
                                 <div className={cn("rounded-lg p-3 max-w-[80%]", msg.type === 'question' ? 'bg-secondary' : 'bg-primary text-primary-foreground')}>
@@ -198,25 +208,45 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
                                     {msg.type === 'answer' && (
                                         <>
                                             <Button variant="ghost" size="sm" onClick={() => translateMessage(msg.id, msg.english)} disabled={isTranslating} className="h-auto p-1 mt-2 -mb-1 text-xs text-primary-foreground/70 hover:text-primary-foreground/100">
-                                                {isTranslating && !msg.translation ? 'Translating...' : 'Translate'}
+                                                {isTranslating ? 'Translating...' : 'Translate to Persian'}
                                             </Button>
                                             {msg.translation && (
-                                                <p className="text-xs opacity-80 mt-1 border-t border-primary-foreground/20 pt-1">
+                                                <p className="text-xs opacity-80 mt-1 border-t border-primary-foreground/20 pt-1" dir='rtl'>
                                                     {msg.translation}
                                                 </p>
                                             )}
                                         </>
                                     )}
+                                    {msg.type === 'question' && msg.options && msg.options.length > 0 && (
+                                        <div className='flex flex-wrap gap-2 mt-3'>
+                                            {msg.options.map(opt => (
+                                                <Button key={opt.english} variant='secondary' size='sm' className='h-auto' onClick={() => handleAnswerSubmit(opt.english)}>
+                                                    {opt.english}
+                                                    <span className='text-xs opacity-70 ml-2'>({opt.persian})</span>
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
+                         {isGenerating && (
+                            <div className="flex items-start gap-3">
+                                <Avatar className="h-8 w-8 border border-primary/20 bg-primary/10">
+                                    <AvatarFallback className='bg-transparent'><Sparkles className="h-5 w-5 text-primary" /></AvatarFallback>
+                                </Avatar>
+                                <div className="rounded-lg p-3 bg-secondary">
+                                    <Spinner className="h-5 w-5 text-primary" />
+                                </div>
+                            </div>
+                         )}
                     </div>
                 </ScrollArea>
                 
-                {!interviewFinished && (
+                {interviewStarted && !interviewFinished && (
                     <div className="flex gap-2 pt-4 border-t">
                         <Textarea
-                            placeholder="Enter patient's answer here..."
+                            placeholder="Enter patient's answer here, or select an option above..."
                             value={currentAnswer}
                             onChange={(e) => setCurrentAnswer(e.target.value)}
                             onKeyDown={(e) => {
@@ -226,11 +256,18 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
                                 }
                             }}
                             className="min-h-[40px]"
-                            disabled={interviewFinished}
+                            disabled={isGenerating}
                         />
-                        <Button onClick={handleAnswerSubmit} disabled={!currentAnswer.trim() || interviewFinished} size="icon">
+                        <Button onClick={() => handleAnswerSubmit()} disabled={!currentAnswer.trim() || isGenerating} size="icon">
                             <Send />
                         </Button>
+                    </div>
+                )}
+                 {interviewFinished && (
+                    <div className="text-center pt-4 border-t">
+                        <Badge variant="secondary" className="text-base py-2 px-4">
+                           Interview Complete
+                        </Badge>
                     </div>
                 )}
             </CardContent>

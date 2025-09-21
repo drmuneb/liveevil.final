@@ -22,6 +22,7 @@ import {
     analyzePatientDocument,
     type AnalyzePatientDocumentInput,
 } from '@/ai/flows/analyze-patient-document';
+import { generateNextQuestion, type GenerateNextQuestionInput } from '@/ai/flows/generate-next-question';
 
 
 export async function handleGenerateQuestions(
@@ -34,6 +35,16 @@ export async function handleGenerateQuestions(
     console.error('Error generating questions:', error);
     return { success: false, error: 'Failed to generate questions.' };
   }
+}
+
+export async function handleGenerateNextQuestion(input: GenerateNextQuestionInput) {
+    try {
+        const output = await generateNextQuestion(input);
+        return { success: true, data: output };
+    } catch (error) {
+        console.error('Error generating next question:', error);
+        return { success: false, error: 'Failed to generate next question.' };
+    }
 }
 
 export async function handleTranslate(input: TranslateInputInput) {

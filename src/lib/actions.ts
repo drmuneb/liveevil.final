@@ -18,6 +18,11 @@ import {
   translateInput,
   type TranslateInputInput,
 } from '@/ai/flows/translate-user-inputs-dynamically';
+import {
+    analyzePatientDocument,
+    type AnalyzePatientDocumentInput,
+} from '@/ai/flows/analyze-patient-document';
+
 
 export async function handleGenerateQuestions(
   input: GenerateBilingualQuestionsInput
@@ -66,3 +71,13 @@ export async function handleGenerateReport(input: SynthesizeBilingualSOAPNoteInp
         return { success: false, error: 'Failed to generate one or more report sections.' };
     }
 }
+
+export async function handleAnalyzeDocument(input: AnalyzePatientDocumentInput) {
+    try {
+      const output = await analyzePatientDocument(input);
+      return { success: true, data: output };
+    } catch (error) {
+      console.error('Error analyzing document:', error);
+      return { success: false, error: 'Failed to analyze document.' };
+    }
+  }

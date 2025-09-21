@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,9 +13,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, User } from 'lucide-react';
+import { CalendarIcon, Loader2, Sparkles, Upload, User } from 'lucide-react';
 import { format } from 'date-fns';
 import type { PatientDetails } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+import { handleAnalyzeDocument } from '@/lib/actions';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -32,14 +34,56 @@ type PatientDetailsFormProps = {
 };
 
 export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFormProps) {
+  const [isAnalyzing, startAnalyzing] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       age: '' as any,
+      gender: undefined,
+      dob: undefined,
       chiefComplaint: '',
+      consciousnessLevel: undefined,
     },
   });
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        startAnalyzing(async () => {
+          const result = await handleAnalyzeDocument({ photoDataUri: dataUri });
+          if (result.success && result.data) {
+            const { name, age, gender, dob, chiefComplaint, consciousnessLevel } = result.data;
+            if (name) form.setValue('name', name);
+            if (age) form.setValue('age', age);
+            if (gender) form.setValue('gender', gender);
+            if (dob) {
+                const date = new Date(dob);
+                // Simple timezone correction
+                const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+                form.setValue('dob', new Date(date.getTime() + userTimezoneOffset));
+            }
+            if (chiefComplaint) form.setValue('chiefComplaint', chiefComplaint);
+            if (consciousnessLevel) form.setValue('consciousnessLevel', consciousnessLevel);
+            toast({ title: 'Document Analyzed', description: 'Patient details have been extracted.' });
+          } else {
+            toast({ variant: 'destructive', title: 'Analysis Failed', description: result.error });
+          }
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+     // Reset file input to allow uploading the same file again
+     if(fileInputRef.current) {
+        fileInputRef.current.value = '';
+     }
+  };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     onFormSubmit(values);
@@ -48,14 +92,36 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
   return (
     <Card className={cn('w-full', className)}>
       <CardHeader>
-        <div className="flex items-center gap-4">
-          <div className="bg-primary/10 p-3 rounded-full">
-            <User className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <CardTitle>Patient Details</CardTitle>
-            <CardDescription>Enter the patient's information to begin.</CardDescription>
-          </div>
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+            <div className="bg-primary/10 p-3 rounded-full">
+                <User className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+                <CardTitle>Patient Details</CardTitle>
+                <CardDescription>Enter the patient's information or upload a document.</CardDescription>
+            </div>
+            </div>
+            <div className='relative'>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isAnalyzing}>
+                    {isAnalyzing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Upload className="mr-2 h-4 w-4" />
+                    )}
+                    Upload Document
+                </Button>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/*"
+                />
+                 <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">
+                    <Sparkles className="h-3 w-3" />
+                </div>
+            </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -94,7 +160,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select gender" />
@@ -169,7 +235,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Level of Consciousness</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select consciousness level" />

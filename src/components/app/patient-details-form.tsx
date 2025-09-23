@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { ChevronRight, File, HeartPulse, Sparkles, Upload, User, MessageSquare } from 'lucide-react';
+import { ChevronRight, File, HeartPulse, Sparkles, Upload, User, MessageSquare, Users } from 'lucide-react';
 import type { PatientDetails } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { handleAnalyzeDocument } from '@/lib/actions';
@@ -25,6 +25,7 @@ const formSchema = z.object({
   dob: z.string().min(1, 'Date of birth is required.'),
   age: z.coerce.number().min(0, 'Age must be a positive number.').optional(),
   gender: z.enum(['male', 'female', 'other'], { required_error: 'Gender is required.' }),
+  perspective: z.enum(['first-person', 'third-person'], { required_error: 'Perspective is required.' }),
   
   ward: z.string().optional(),
   room: z.string().optional(),
@@ -92,6 +93,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
       familyName: '',
       fatherName: '',
       gender: undefined,
+      perspective: 'first-person',
       dob: '',
       dateOfAdmission: '',
       ward: '',
@@ -178,7 +180,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
   return (
     <Card className={cn('w-full', className)}>
       <CardHeader>
-        <CardTitle>MedicAssist Notes</CardTitle>
+        <CardTitle>LiveEvil</CardTitle>
         <CardDescription>Enter the details or upload a document for AI analysis.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -219,6 +221,42 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+             <Section icon={<Users className="h-6 w-6 text-primary" />} title="Conversation Perspective" description="چشم انداز گفتگو" defaultOpen>
+                <FormField
+                  control={form.control}
+                  name="perspective"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Who is the AI assistant talking to?</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="first-person" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Talking to the patient directly (e.g., "How are you feeling?")
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="third-person" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Talking to a caregiver or third party (e.g., "How is the patient feeling?")
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </Section>
 
              <Section icon={<MessageSquare className="h-6 w-6 text-primary" />} title="Chief Complaint" description="شکایت اصلی" defaultOpen>
                 <FormField

@@ -27,8 +27,11 @@ const prompt = ai.definePrompt({
   prompt: `You are a helpful medical AI assistant conducting a consultation. Your goal is to gather enough information through a series of questions to suggest a diagnosis.
 
   - You will be given the patient's initial details.
-  - You will also be given the conversation history between you (model) and the patient (user).
-  - Your task is to generate the *next logical question* to ask.
+  - You will be given a 'perspective' which tells you who you are talking to.
+    - If perspective is 'first-person', address the patient directly (e.g., "How are you feeling?").
+    - If perspective is 'third-person', you are talking to a caregiver, so refer to the patient in the third person (e.g., "How is the patient feeling?").
+  - You will also be given the conversation history between you (model) and the user.
+  - Your task is to generate the *next logical question* to ask based on the provided perspective.
   - All questions and options must be in both English and Persian (Farsi).
   - You should provide multiple-choice options for the user where it makes sense. This helps guide the conversation.
   - Review the entire conversation. Do not ask questions that have already been answered.
@@ -37,6 +40,8 @@ const prompt = ai.definePrompt({
 
   Initial Patient Information:
   {{{patientInformation}}}
+
+  Perspective: {{perspective}}
 
   Conversation History:
   {{#each conversationHistory}}

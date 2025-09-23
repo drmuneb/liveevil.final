@@ -75,6 +75,7 @@ export function BilingualAssistant({ patientDetails, onSessionEnd }: BilingualAs
     const result = await handleGenerateNextQuestion({
       patientInformation: patientInfoString,
       conversationHistory: conversation,
+      perspective: patientDetails.perspective,
     });
 
     if (result.success && result.data) {

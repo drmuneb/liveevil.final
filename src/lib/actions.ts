@@ -95,3 +95,14 @@ export async function handleAnalyzeDocument(input: AnalyzePatientDocumentInput) 
       return { success: false, error: 'Failed to analyze document.' };
     }
   }
+
+export async function handleSetApiKey(apiKey: string) {
+    // This is a server action, but in this setup, we're not persisting
+    // the key on the server. The client will store it in local storage.
+    // This function could be extended to store keys securely on a server/database.
+    if (typeof apiKey !== 'string' || apiKey.length < 10) {
+        return { success: false, error: 'Invalid API key provided.' };
+    }
+    // In a real app, you would now store this key securely, likely associated with a user.
+    return { success: true };
+}

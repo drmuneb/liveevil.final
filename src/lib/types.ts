@@ -11,6 +11,7 @@ export type PatientDetails = {
   dob: string;
   age?: number;
   gender: 'male' | 'female' | 'other';
+  perspective: 'first-person' | 'third-person';
   
   ward: string;
   room: string;
@@ -44,6 +45,7 @@ const ConversationHistorySchema = z.array(z.object({
 export const GenerateNextQuestionInputSchema = z.object({
   patientInformation: z.string().describe('Comprehensive patient details including history, demographics, and relevant medical background.'),
   conversationHistory: ConversationHistorySchema.describe('The history of the conversation so far.'),
+  perspective: z.enum(['first-person', 'third-person']).describe("The perspective for asking questions. 'first-person' for talking to the patient, 'third-person' for talking to a caregiver.").optional(),
 });
 export type GenerateNextQuestionInput = z.infer<typeof GenerateNextQuestionInputSchema>;
 

@@ -5,10 +5,12 @@ import { AppHeader } from '@/components/app/header';
 import { PatientDetailsForm } from '@/components/app/patient-details-form';
 import { BilingualAssistant } from '@/components/app/bilingual-assistant';
 import type { PatientDetails } from '@/lib/types';
+import { HistoryDialog } from '@/components/app/history-dialog';
 
 export default function Home() {
   const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(null);
   const [printableArea, setPrintableArea] = useState<HTMLElement | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const handlePrint = () => {
     if (printableArea) {
@@ -23,9 +25,13 @@ export default function Home() {
     }
   };
 
+  const startNewSession = () => {
+    setPatientDetails(null);
+  }
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <AppHeader onPrint={handlePrint} />
+      <AppHeader onPrint={handlePrint} onShowHistory={() => setIsHistoryOpen(true)} />
       <main
         className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8"
         ref={(el) => setPrintableArea(el)}
@@ -36,10 +42,18 @@ export default function Home() {
               onFormSubmit={setPatientDetails}
             />
           ) : (
-            <BilingualAssistant patientDetails={patientDetails} />
+            <BilingualAssistant patientDetails={patientDetails} onSessionEnd={startNewSession} />
           )}
         </div>
       </main>
+      <HistoryDialog
+        isOpen={isHistoryOpen}
+        onOpenChange={setIsHistoryOpen}
+        onLoadSession={(details) => {
+          setPatientDetails(details);
+          setIsHistoryOpen(false);
+        }}
+      />
     </div>
   );
 }

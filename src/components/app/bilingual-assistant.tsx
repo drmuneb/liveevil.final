@@ -13,6 +13,7 @@ import {
 } from '@/lib/actions';
 import type {
   DifferentialDiagnoses,
+  HistoryEntry,
   PatientDetails,
   SoapNote,
   TreatmentPlan,
@@ -29,6 +30,7 @@ import { Badge } from '../ui/badge';
 
 type BilingualAssistantProps = {
   patientDetails: PatientDetails;
+  onSessionEnd: () => void;
 };
 
 type Message = {
@@ -40,7 +42,7 @@ type Message = {
     options?: { english: string; persian: string }[];
 };
 
-export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) {
+export function BilingualAssistant({ patientDetails, onSessionEnd }: BilingualAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
   
@@ -48,13 +50,13 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   const [ddx, setDdx] = useState<DifferentialDiagnoses | null>(null);
   const [treatmentPlan, setTreatmentPlan] = useState<TreatmentPlan | null>(null);
 
-  const [isGenerating, setIsGenerating] = useState(true); // Start with generating the first question
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [interviewFinished, setInterviewFinished] = useState(false);
+  const [hasFetchedInitialQuestion, setHasFetchedInitialQuestion] = useState(false);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const hasFetchedInitialQuestion = useRef(false);
 
   const { toast } = useToast();
 
@@ -63,6 +65,7 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
     .join(', ');
 
   const fetchNextQuestion = async (history: Message[]) => {
+    if (isGenerating) return;
     setIsGenerating(true);
     const conversation = history.map(m => ({
       role: m.type === 'question' ? 'model' : 'user',
@@ -99,12 +102,12 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   };
   
   useEffect(() => {
-    if (!hasFetchedInitialQuestion.current) {
-        hasFetchedInitialQuestion.current = true;
+    if (!hasFetchedInitialQuestion) {
+        setHasFetchedInitialQuestion(true);
         fetchNextQuestion([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasFetchedInitialQuestion]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -129,6 +132,28 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
 
     fetchNextQuestion(updatedMessages);
   };
+
+  const saveReportToHistory = (report: { soapNote: SoapNote, ddx: DifferentialDiagnoses, treatmentPlan: TreatmentPlan }) => {
+    try {
+      const newHistoryEntry: HistoryEntry = {
+        id: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+        patientDetails,
+        ...report,
+      };
+
+      const history = JSON.parse(localStorage.getItem('medic_assist_history') || '[]');
+      const newHistory = [newHistoryEntry, ...history];
+      localStorage.setItem('medic_assist_history', JSON.stringify(newHistory));
+    } catch (error) {
+      console.error("Failed to save report to history:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Could not save to history',
+        description: 'There was an error saving the report to your browser\'s local storage.',
+      });
+    }
+  };
   
   const generateReport = async () => {
     setIsGeneratingReport(true);
@@ -151,6 +176,7 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
       setSoapNote(result.data.soapNote);
       setDdx(result.data.ddx);
       setTreatmentPlan(result.data.treatmentPlan);
+      saveReportToHistory(result.data);
       toast({ title: 'Report Generated', description: 'SOAP note, DDx, and treatment plan are ready.' });
     } else {
       toast({
@@ -276,7 +302,7 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
                         </div>
                     </div>
                 )}
-                 {interviewFinished && (
+                 {interviewFinished && !soapNote && (
                     <div className="text-center pt-4 border-t">
                         <Badge variant="secondary" className="text-base py-2 px-4">
                            Interview Complete
@@ -287,7 +313,7 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
         </Card>
       )}
 
-      {interviewFinished && (
+      {interviewFinished && !soapNote && (
         <div className="flex justify-center">
           <Button onClick={generateReport} disabled={isGeneratingReport} size="lg">
             {isGeneratingReport ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
@@ -297,22 +323,29 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
       )}
       
       {(isGeneratingReport || soapNote) && (
-        <Tabs defaultValue="soap" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="soap">SOAP Note</TabsTrigger>
-            <TabsTrigger value="ddx">Differential Diagnosis</TabsTrigger>
-            <TabsTrigger value="plan">Treatment Plan</TabsTrigger>
-          </TabsList>
-          <TabsContent value="soap">
-            {isGeneratingReport && !soapNote ? <Card className="p-8 flex justify-center items-center min-h-[200px]"><Spinner/></Card> : <SoapNoteDisplay data={soapNote} />}
-          </TabsContent>
-          <TabsContent value="ddx">
-            {isGeneratingReport && !ddx ? <Card className="p-8 flex justify-center items-center min-h-[200px]"><Spinner/></Card> : <DifferentialDiagnosisDisplay data={ddx} />}
-          </TabsContent>
-          <TabsContent value="plan">
-            {isGeneratingReport && !treatmentPlan ? <Card className="p-8 flex justify-center items-center min-h-[200px]"><Spinner/></Card> : <TreatmentPlanDisplay data={treatmentPlan} />}
-          </TabsContent>
-        </Tabs>
+        <>
+          <Tabs defaultValue="soap" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="soap">SOAP Note</TabsTrigger>
+              <TabsTrigger value="ddx">Differential Diagnosis</TabsTrigger>
+              <TabsTrigger value="plan">Treatment Plan</TabsTrigger>
+            </TabsList>
+            <TabsContent value="soap">
+              {isGeneratingReport && !soapNote ? <Card className="p-8 flex justify-center items-center min-h-[200px]"><Spinner/></Card> : <SoapNoteDisplay data={soapNote} />}
+            </TabsContent>
+            <TabsContent value="ddx">
+              {isGeneratingReport && !ddx ? <Card className="p-8 flex justify-center items-center min-h-[200px]"><Spinner/></Card> : <DifferentialDiagnosisDisplay data={ddx} />}
+            </TabsContent>
+            <TabsContent value="plan">
+              {isGeneratingReport && !treatmentPlan ? <Card className="p-8 flex justify-center items-center min-h-[200px]"><Spinner/></Card> : <TreatmentPlanDisplay data={treatmentPlan} />}
+            </TabsContent>
+          </Tabs>
+          <div className="flex justify-center">
+            <Button onClick={onSessionEnd} size="lg">
+              Start New Session
+            </Button>
+          </div>
+        </>
       )}
     </div>
   );

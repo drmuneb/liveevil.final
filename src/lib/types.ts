@@ -70,3 +70,12 @@ export type Answer = {
 export type SoapNote = SynthesizeBilingualSOAPNoteOutput;
 export type DifferentialDiagnoses = SuggestDifferentialDiagnosesOutput;
 export type TreatmentPlan = FormulateBilingualTreatmentPlanOutput;
+
+export type HistoryEntry = {
+  id: string;
+  timestamp: string;
+  patientDetails: PatientDetails;
+  soapNote: SoapNote;
+  ddx: DifferentialDiagnoses;
+  treatmentPlan: TreatmentPlan;
+};

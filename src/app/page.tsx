@@ -4,37 +4,38 @@ import React, { useState } from 'react';
 import { AppHeader } from '@/components/app/header';
 import { PatientDetailsForm } from '@/components/app/patient-details-form';
 import { BilingualAssistant } from '@/components/app/bilingual-assistant';
-import type { PatientDetails } from '@/lib/types';
+import type { PatientDetails, SoapNote, DifferentialDiagnoses, TreatmentPlan, Message } from '@/lib/types';
 import { HistoryDialog } from '@/components/app/history-dialog';
+import { PrintableReport } from '@/components/app/printable-report';
 
 export default function Home() {
   const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(null);
-  const [printableArea, setPrintableArea] = useState<HTMLElement | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  
+  // State for the full report
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [soapNote, setSoapNote] = useState<SoapNote | null>(null);
+  const [ddx, setDdx] = useState<DifferentialDiagnoses | null>(null);
+  const [treatmentPlan, setTreatmentPlan] = useState<TreatmentPlan | null>(null);
+
 
   const handlePrint = () => {
-    if (printableArea) {
-      const printContents = printableArea.innerHTML;
-      const originalContents = document.body.innerHTML;
-      document.body.innerHTML = printContents;
-      window.print();
-      document.body.innerHTML = originalContents;
-      window.location.reload();
-    } else {
-      window.print();
-    }
+    window.print();
   };
 
   const startNewSession = () => {
     setPatientDetails(null);
+    setMessages([]);
+    setSoapNote(null);
+    setDdx(null);
+    setTreatmentPlan(null);
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40 print:bg-white">
       <AppHeader onPrint={handlePrint} onShowHistory={() => setIsHistoryOpen(true)} />
       <main
-        className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8"
-        ref={(el) => setPrintableArea(el)}
+        className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8 print:hidden"
       >
         <div className="w-full max-w-4xl mx-auto grid gap-4 md:gap-8">
           {!patientDetails ? (
@@ -42,7 +43,18 @@ export default function Home() {
               onFormSubmit={setPatientDetails}
             />
           ) : (
-            <BilingualAssistant patientDetails={patientDetails} onSessionEnd={startNewSession} />
+            <BilingualAssistant 
+              patientDetails={patientDetails} 
+              onSessionEnd={startNewSession}
+              messages={messages}
+              setMessages={setMessages}
+              soapNote={soapNote}
+              setSoapNote={setSoapNote}
+              ddx={ddx}
+              setDdx={setDdx}
+              treatmentPlan={treatmentPlan}
+              setTreatmentPlan={setTreatmentPlan}
+            />
           )}
         </div>
       </main>
@@ -54,6 +66,15 @@ export default function Home() {
           setIsHistoryOpen(false);
         }}
       />
+      <div className="hidden print:block">
+        <PrintableReport
+            patientDetails={patientDetails}
+            messages={messages}
+            soapNote={soapNote}
+            ddx={ddx}
+            treatmentPlan={treatmentPlan}
+        />
+      </div>
     </div>
   );
 }

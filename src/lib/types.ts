@@ -62,6 +62,16 @@ export const GenerateNextQuestionOutputSchema = z.object({
 });
 export type GenerateNextQuestionOutput = z.infer<typeof GenerateNextQuestionOutputSchema>;
 
+export type Message = {
+    id: string;
+    type: 'question' | 'answer';
+    english: string;
+    persian?: string;
+    translation?: string;
+    options?: { english: string; persian: string }[];
+};
+
+
 export type Question = GenerateNextQuestionOutput['nextQuestion'] & { id: string };
 
 export type Answer = {

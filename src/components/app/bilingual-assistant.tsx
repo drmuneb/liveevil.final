@@ -17,6 +17,7 @@ import type {
   PatientDetails,
   SoapNote,
   TreatmentPlan,
+  Message,
 } from '@/lib/types';
 import { Bot, Loader2, Send, Sparkles } from 'lucide-react';
 import { SoapNoteDisplay } from './soap-note-display';
@@ -31,25 +32,30 @@ import { Badge } from '../ui/badge';
 type BilingualAssistantProps = {
   patientDetails: PatientDetails;
   onSessionEnd: () => void;
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  soapNote: SoapNote | null;
+  setSoapNote: React.Dispatch<React.SetStateAction<SoapNote | null>>;
+  ddx: DifferentialDiagnoses | null;
+  setDdx: React.Dispatch<React.SetStateAction<DifferentialDiagnoses | null>>;
+  treatmentPlan: TreatmentPlan | null;
+  setTreatmentPlan: React.Dispatch<React.SetStateAction<TreatmentPlan | null>>;
 };
 
-type Message = {
-    id: string;
-    type: 'question' | 'answer';
-    english: string;
-    persian?: string;
-    translation?: string;
-    options?: { english: string; persian: string }[];
-};
-
-export function BilingualAssistant({ patientDetails, onSessionEnd }: BilingualAssistantProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+export function BilingualAssistant({ 
+  patientDetails, 
+  onSessionEnd,
+  messages,
+  setMessages,
+  soapNote,
+  setSoapNote,
+  ddx,
+  setDdx,
+  treatmentPlan,
+  setTreatmentPlan
+}: BilingualAssistantProps) {
   const [currentAnswer, setCurrentAnswer] = useState('');
   
-  const [soapNote, setSoapNote] = useState<SoapNote | null>(null);
-  const [ddx, setDdx] = useState<DifferentialDiagnoses | null>(null);
-  const [treatmentPlan, setTreatmentPlan] = useState<TreatmentPlan | null>(null);
-
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -103,12 +109,12 @@ export function BilingualAssistant({ patientDetails, onSessionEnd }: BilingualAs
   };
   
   useEffect(() => {
-    if (!hasFetchedInitialQuestion) {
+    if (!hasFetchedInitialQuestion && messages.length === 0) {
         setHasFetchedInitialQuestion(true);
         fetchNextQuestion([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasFetchedInitialQuestion]);
+  }, [hasFetchedInitialQuestion, messages.length]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {

@@ -18,6 +18,8 @@ export type PatientDetails = {
   dateOfAdmission: Date;
   attendingPhysician: string;
 
+  chiefComplaint: string;
+
   bp: string;
   rr: string;
   pr: string;

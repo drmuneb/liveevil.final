@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, ChevronRight, File, FileText, HeartPulse, Sparkles, Upload, User } from 'lucide-react';
+import { CalendarIcon, ChevronRight, File, FileText, HeartPulse, Sparkles, Upload, User, MessageSquare } from 'lucide-react';
 import { format, differenceInYears, addYears, differenceInMonths, addMonths, differenceInDays } from 'date-fns';
 import type { PatientDetails } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -35,6 +35,8 @@ const formSchema = z.object({
   dateOfAdmission: z.date({ required_error: 'Date of admission is required.' }),
   attendingPhysician: z.string().optional(),
 
+  chiefComplaint: z.string().optional(),
+  
   bp: z.string().optional(),
   rr: z.string().optional(),
   pr: z.string().optional(),
@@ -108,6 +110,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
       room: '',
       bed: '',
       attendingPhysician: '',
+      chiefComplaint: '',
       bp: '',
       rr: '',
       pr: '',
@@ -158,6 +161,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
           const {
             name, familyName, fatherName, dob, age, gender,
             ward, room, bed, dateOfAdmission, attendingPhysician,
+            chiefComplaint,
             bp, rr, pr, spo2,
             eyeColor, skinColor, bruises, rashUlcers,
             pastMedicalHistory, pastSurgicalHistory, medication, familyHistory
@@ -182,6 +186,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
             form.setValue('dateOfAdmission', new Date(date.getTime() + userTimezoneOffset));
           }
           if (attendingPhysician) form.setValue('attendingPhysician', attendingPhysician);
+          if (chiefComplaint) form.setValue('chiefComplaint', chiefComplaint);
           if (bp) form.setValue('bp', bp);
           if (rr) form.setValue('rr', rr);
           if (pr) form.setValue('pr', pr);
@@ -255,7 +260,27 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <Section icon={<User className="h-6 w-6 text-primary" />} title="Patient Identification" description="شناسایی بیمار" defaultOpen>
+
+             <Section icon={<MessageSquare className="h-6 w-6 text-primary" />} title="Chief Complaint" description="شکایت اصلی" defaultOpen>
+                <FormField
+                    control={form.control}
+                    name="chiefComplaint"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormControl>
+                                <Textarea
+                                {...field}
+                                placeholder="Describe the patient's main symptoms and reason for visit..."
+                                className="min-h-[100px]"
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </Section>
+
+            <Section icon={<User className="h-6 w-6 text-primary" />} title="Patient Identification" description="شناسایی بیمار">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem><FormLabel>Name * <span className='text-muted-foreground text-xs'>(نام)</span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>

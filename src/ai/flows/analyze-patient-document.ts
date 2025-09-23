@@ -43,6 +43,7 @@ const AnalyzePatientDocumentOutputSchema = z.object({
   bruises: z.string().optional().describe("Description of any bruises."),
   rashUlcers: z.string().optional().describe("Description of any rashes or ulcers."),
 
+  chiefComplaint: z.string().optional().describe("The patient's chief complaint or reason for visit."),
   pastMedicalHistory: z.string().optional().describe("Patient's past medical history."),
   pastSurgicalHistory: z.string().optional().describe("Patient's past surgical history."),
   medication: z.string().optional().describe("Patient's current or past medication."),

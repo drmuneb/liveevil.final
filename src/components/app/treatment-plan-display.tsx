@@ -3,10 +3,29 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { TreatmentPlan } from '@/lib/types';
+import 'tailwindcss/tailwind.css';
 
 type TreatmentPlanDisplayProps = {
   data: TreatmentPlan | null;
 };
+
+const MarkdownRenderer = ({ content, isRtl = false }: { content: string, isRtl?: boolean }) => {
+  // A simple markdown to HTML converter for demonstration.
+  // In a real app, you would use a library like 'marked' or 'react-markdown'.
+  const htmlContent = content
+    .replace(/### (.*)/g, '<h3 class="text-lg font-semibold text-primary mt-4 mb-2">$1</h3>')
+    .replace(/\* \*\*(.*)\*\*: (.*)/g, '<li><strong>$1:</strong> $2</li>')
+    .replace(/\* (.*)/g, '<li class="ml-4 list-disc">$1</li>')
+    .replace(/\n/g, '<br />');
+
+  return (
+    <div 
+      className={`prose prose-sm max-w-none text-muted-foreground ${isRtl ? 'rtl' : 'ltr'}`}
+      dangerouslySetInnerHTML={{ __html: htmlContent }} 
+    />
+  );
+};
+
 
 export function TreatmentPlanDisplay({ data }: TreatmentPlanDisplayProps) {
   if (!data) {
@@ -40,7 +59,7 @@ export function TreatmentPlanDisplay({ data }: TreatmentPlanDisplayProps) {
                 </div>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
+              <div className="prose prose-sm max-w-none text-muted-foreground">
                 {data.treatmentPlanEnglish}
               </div>
             </AccordionContent>
@@ -53,7 +72,7 @@ export function TreatmentPlanDisplay({ data }: TreatmentPlanDisplayProps) {
                 </div>
             </AccordionTrigger>
             <AccordionContent className="text-right" dir="rtl">
-              <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap">
+              <div className="prose prose-sm max-w-none text-muted-foreground">
                 {data.treatmentPlanPersian}
               </div>
             </AccordionContent>

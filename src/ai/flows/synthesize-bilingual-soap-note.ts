@@ -36,17 +36,21 @@ const prompt = ai.definePrompt({
 
   Given the following patient information and their answers to medical questions, synthesize a comprehensive SOAP note in both languages.
 
-  Patient Information: {{{patientInformation}}}
-  Answers: {{{answers}}}
+  **Patient Information**: {{{patientInformation}}}
+  **Interview Answers**: {{{answers}}}
 
-  Ensure that the SOAP note is well-structured, with clear separation between the Subjective, Objective, Assessment, and Plan sections in both languages.
-  Provide the output in JSON format.
+  Structure the output for each language with clear Subjective (S), Objective (O), Assessment (A), and Plan (P) sections.
 
-  English SOAP Note:
-  SOAP Note:
+  - **S (Subjective)**: The patient's chief complaint and history of present illness.
+  - **O (Objective)**: Measurable findings like vital signs, and physical exam results.
+  - **A (Assessment)**: The primary diagnosis or differential diagnoses.
+  - **P (Plan)**: The treatment plan, including tests, medications, and follow-up.
 
-  Persian SOAP Note:
-  SOAP Note:
+  **Example Format**:
+  soapNoteEnglish: "S: Patient reports chest pain... \\nO: BP 140/90, HR 88... \\nA: Suspected Angina... \\nP: Recommend EKG..."
+  soapNotePersian: "S: بیمار از درد قفسه سینه شکایت دارد... \\nO: فشار خون 140/90، ضربان قلب 88... \\nA: مشکوک به آنژین... \\nP: توصیه به انجام نوار قلب..."
+
+  Ensure your response strictly follows this format with the S:, O:, A:, P: prefixes for each section.
   `,
 });
 

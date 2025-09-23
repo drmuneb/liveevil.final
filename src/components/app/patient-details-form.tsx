@@ -5,16 +5,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, ChevronRight, File, FileText, HeartPulse, Sparkles, Upload, User, MessageSquare } from 'lucide-react';
-import { format, differenceInYears, addYears, differenceInMonths, addMonths, differenceInDays } from 'date-fns';
+import { ChevronRight, File, HeartPulse, Sparkles, Upload, User, MessageSquare } from 'lucide-react';
 import type { PatientDetails } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { handleAnalyzeDocument } from '@/lib/actions';
@@ -25,14 +22,14 @@ const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   familyName: z.string().min(1, 'Family Name is required.'),
   fatherName: z.string().optional(),
-  dob: z.date({ required_error: 'Date of birth is required.' }),
-  age: z.coerce.number().min(0).optional(),
+  dob: z.string().min(1, 'Date of birth is required.'),
+  age: z.coerce.number().min(0, 'Age must be a positive number.').optional(),
   gender: z.enum(['male', 'female', 'other'], { required_error: 'Gender is required.' }),
   
   ward: z.string().optional(),
   room: z.string().optional(),
   bed: z.string().optional(),
-  dateOfAdmission: z.date({ required_error: 'Date of admission is required.' }),
+  dateOfAdmission: z.string().min(1, 'Date of admission is required.'),
   attendingPhysician: z.string().optional(),
 
   chiefComplaint: z.string().optional(),
@@ -57,16 +54,6 @@ type PatientDetailsFormProps = {
   onFormSubmit: (data: PatientDetails) => void;
   className?: string;
 };
-
-function calculateAge(dob: Date): { years: number; months: number; days: number; } {
-    const now = new Date();
-    const years = differenceInYears(now, dob);
-    const pastYearDate = addYears(dob, years);
-    const months = differenceInMonths(now, pastYearDate);
-    const pastMonthDate = addMonths(pastYearDate, months);
-    const days = differenceInDays(now, pastMonthDate);
-    return { years, months, days };
-}
 
 const Section = ({ icon, title, description, children, defaultOpen = false }: { icon: React.ReactNode, title: string, description: string, children: React.ReactNode, defaultOpen?: boolean }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -95,7 +82,6 @@ const Section = ({ icon, title, description, children, defaultOpen = false }: { 
 
 export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFormProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [calculatedAge, setCalculatedAge] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -106,6 +92,8 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
       familyName: '',
       fatherName: '',
       gender: undefined,
+      dob: '',
+      dateOfAdmission: '',
       ward: '',
       room: '',
       bed: '',
@@ -125,27 +113,6 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
       familyHistory: '',
     },
   });
-
-  const dobValue = form.watch('dob');
-
-  useEffect(() => {
-    if (dobValue) {
-      const age = calculateAge(dobValue);
-      let ageString = '';
-      if (age.years > 0) ageString += `${age.years} year${age.years > 1 ? 's' : ''}`;
-      if (age.months > 0) ageString += ` ${age.months} month${age.months > 1 ? 's' : ''}`;
-      if (age.days > 0) ageString += ` ${age.days} day${age.days > 1 ? 's' : ''}`;
-      
-      setCalculatedAge(ageString.trim());
-      
-      if (form.getValues('age') !== age.years) {
-          form.setValue('age', age.years, { shouldValidate: true });
-      }
-    } else {
-        setCalculatedAge(null);
-    }
-  }, [dobValue, form]);
-
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -170,21 +137,13 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
           if (name) form.setValue('name', name);
           if (familyName) form.setValue('familyName', familyName);
           if (fatherName) form.setValue('fatherName', fatherName);
-          if (dob) {
-              const date = new Date(dob);
-              const userTimezoneOffset = date.getTimezoneOffset() * 60000;
-              form.setValue('dob', new Date(date.getTime() + userTimezoneOffset));
-          }
+          if (dob) form.setValue('dob', dob);
           if (age) form.setValue('age', age);
           if (gender) form.setValue('gender', gender);
           if (ward) form.setValue('ward', ward);
           if (room) form.setValue('room', room);
           if (bed) form.setValue('bed', bed);
-          if (dateOfAdmission) {
-            const date = new Date(dateOfAdmission);
-            const userTimezoneOffset = date.getTimezoneOffset() * 60000;
-            form.setValue('dateOfAdmission', new Date(date.getTime() + userTimezoneOffset));
-          }
+          if (dateOfAdmission) form.setValue('dateOfAdmission', dateOfAdmission);
           if (attendingPhysician) form.setValue('attendingPhysician', attendingPhysician);
           if (chiefComplaint) form.setValue('chiefComplaint', chiefComplaint);
           if (bp) form.setValue('bp', bp);
@@ -292,20 +251,11 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
                   <FormItem><FormLabel>Father's Name <span className='text-muted-foreground text-xs'>(نام پدر)</span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="dob" render={({ field }) => (
-                  <FormItem className="flex flex-col"><FormLabel>Date of Birth * <span className='text-muted-foreground text-xs'>(تاریخ تولد)</span></FormLabel>
-                    <Popover><PopoverTrigger asChild><FormControl>
-                      <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                      </Button>
-                    </FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date() || date < new Date('1900-01-01')} initialFocus /></PopoverContent></Popover>
-                    <FormMessage />
-                  </FormItem>
+                  <FormItem><FormLabel>Date of Birth (Jalali) * <span className='text-muted-foreground text-xs'>(تاریخ تولد)</span></FormLabel><FormControl><Input placeholder="YYYY/MM/DD" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                <FormItem><FormLabel>Age <span className='text-muted-foreground text-xs'>(سن)</span></FormLabel>
-                  <div className='flex items-center h-10 rounded-md border border-input bg-muted px-3 py-2 text-sm'>
-                      {calculatedAge || <span className='text-muted-foreground'>N/A</span>}
-                  </div>
-                </FormItem>
+                <FormField control={form.control} name="age" render={({ field }) => (
+                    <FormItem><FormLabel>Age <span className='text-muted-foreground text-xs'>(سن)</span></FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
                 <FormField control={form.control} name="gender" render={({ field }) => (
                   <FormItem><FormLabel>Gender * <span className='text-muted-foreground text-xs'>(جنسیت)</span></FormLabel><FormControl><RadioGroup onValueChange={field.onChange} value={field.value} className="flex items-center space-x-4 pt-2">
                     <FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="male" /></FormControl><FormLabel className="font-normal">Male</FormLabel></FormItem>
@@ -328,14 +278,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
                         <FormItem><FormLabel>Bed <span className='text-muted-foreground text-xs'>(تخت)</span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                      <FormField control={form.control} name="dateOfAdmission" render={({ field }) => (
-                        <FormItem className="flex flex-col"><FormLabel>Date of Admission * <span className='text-muted-foreground text-xs'>(تاریخ پذیرش)</span></FormLabel>
-                            <Popover><PopoverTrigger asChild><FormControl>
-                            <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                            </Button>
-                            </FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover>
-                            <FormMessage />
-                        </FormItem>
+                        <FormItem><FormLabel>Date of Admission (Jalali) * <span className='text-muted-foreground text-xs'>(تاریخ پذیرش)</span></FormLabel><FormControl><Input placeholder="YYYY/MM/DD" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="attendingPhysician" render={({ field }) => (
                         <FormItem className="md:col-span-2"><FormLabel>Attending Physician <span className='text-muted-foreground text-xs'>(پزشک معالج)</span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>

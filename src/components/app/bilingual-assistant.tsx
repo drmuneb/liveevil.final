@@ -59,7 +59,7 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   const { toast } = useToast();
 
   const patientInfoString = Object.entries(patientDetails)
-    .map(([key, value]) => `${key}: ${value instanceof Date ? value.toDateString() : value}`)
+    .map(([key, value]) => `${key}: ${value}`)
     .join(', ');
 
   const fetchNextQuestion = async (history: Message[]) => {

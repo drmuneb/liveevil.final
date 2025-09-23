@@ -8,14 +8,14 @@ export type PatientDetails = {
   name: string;
   familyName: string;
   fatherName: string;
-  dob: Date;
-  age: number;
+  dob: string;
+  age?: number;
   gender: 'male' | 'female' | 'other';
   
   ward: string;
   room: string;
   bed: string;
-  dateOfAdmission: Date;
+  dateOfAdmission: string;
   attendingPhysician: string;
 
   chiefComplaint: string;

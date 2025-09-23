@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,61 +48,63 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   const [ddx, setDdx] = useState<DifferentialDiagnoses | null>(null);
   const [treatmentPlan, setTreatmentPlan] = useState<TreatmentPlan | null>(null);
 
-  const [isGenerating, startGeneration] = useTransition();
-  const [isGeneratingReport, startReportGeneration] = useTransition();
-  const [isTranslating, startTranslation] = useTransition();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
   const [interviewFinished, setInterviewFinished] = useState(false);
+  const [initialQuestionFetched, setInitialQuestionFetched] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
 
   const { toast } = useToast();
 
-  const patientInfoString = `Name: ${patientDetails.name}, Age: ${patientDetails.age}, Gender: ${patientDetails.gender}, DOB: ${patientDetails.dob.toDateString()}, Chief Complaint: ${patientDetails.chiefComplaint}, Consciousness: ${patientDetails.consciousnessLevel}`;
+  const patientInfoString = Object.entries(patientDetails)
+    .map(([key, value]) => `${key}: ${value instanceof Date ? value.toDateString() : value}`)
+    .join(', ');
 
-  const fetchNextQuestion = (history: Message[]) => {
-    startGeneration(async () => {
-      const conversation = history.map(m => ({
-        role: m.type === 'question' ? 'model' : 'user',
-        content: m.english,
-      }));
+  const fetchNextQuestion = async (history: Message[]) => {
+    setIsGenerating(true);
+    const conversation = history.map(m => ({
+      role: m.type === 'question' ? 'model' : 'user',
+      content: m.english,
+    }));
 
-      const result = await handleGenerateNextQuestion({
-        patientInformation: patientInfoString,
-        conversationHistory: conversation,
-      });
-
-      if (result.success && result.data) {
-        if (result.data.isComplete) {
-          setInterviewFinished(true);
-          toast({ title: "Interview Complete", description: "You can now generate the full report." });
-        } else if (result.data.nextQuestion) {
-          const { english, persian, options } = result.data.nextQuestion;
-          setMessages(prev => [...prev, {
-            id: `q${prev.length}`,
-            type: 'question',
-            english,
-            persian,
-            options,
-          }]);
-        }
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: result.error || 'Could not generate the next question.',
-        });
-      }
+    const result = await handleGenerateNextQuestion({
+      patientInformation: patientInfoString,
+      conversationHistory: conversation,
     });
+
+    if (result.success && result.data) {
+      if (result.data.isComplete) {
+        setInterviewFinished(true);
+        toast({ title: "Interview Complete", description: "You can now generate the full report." });
+      } else if (result.data.nextQuestion) {
+        const { english, persian, options } = result.data.nextQuestion;
+        setMessages(prev => [...prev, {
+          id: `q${prev.length}`,
+          type: 'question',
+          english,
+          persian,
+          options,
+        }]);
+      }
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.error || 'Could not generate the next question.',
+      });
+    }
+    setIsGenerating(false);
   };
   
   useEffect(() => {
-    // Start the interview with the first question only if no messages exist.
-    if (messages.length === 0) {
-      fetchNextQuestion([]);
+    if (!initialQuestionFetched) {
+        setInitialQuestionFetched(true);
+        fetchNextQuestion([]);
     }
-    // We only want this to run a single time when the component is first mounted.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuestionFetched]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -121,60 +123,58 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
         english: answer,
     };
     
-    // Add the new answer to messages first
     const updatedMessages = [...messages, newAnswer];
     setMessages(updatedMessages);
     setCurrentAnswer('');
 
-    // Then fetch the next question based on the history that includes the new answer
     fetchNextQuestion(updatedMessages);
   };
   
-  const generateReport = () => {
-    startReportGeneration(async () => {
-      const qaPairs = messages.filter(m => m.type === 'question' || m.type === 'answer')
-        .reduce((acc, m, i, arr) => {
-            if (m.type === 'question') {
-                const qText = m.english;
-                const aText = arr[i+1]?.type === 'answer' ? arr[i+1].english : 'Not answered';
-                acc.push(`${qText}: ${aText}`);
-            }
-            return acc;
-        }, [] as string[]).join('\n');
-      
-      const result = await handleGenerateReport({
-        patientInformation: patientInfoString,
-        answers: qaPairs
-      });
-
-      if (result.success && result.data) {
-        setSoapNote(result.data.soapNote);
-        setDdx(result.data.ddx);
-        setTreatmentPlan(result.data.treatmentPlan);
-        toast({ title: 'Report Generated', description: 'SOAP note, DDx, and treatment plan are ready.' });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error Generating Report',
-          description: result.error,
-        });
-      }
+  const generateReport = async () => {
+    setIsGeneratingReport(true);
+    const qaPairs = messages.filter(m => m.type === 'question' || m.type === 'answer')
+      .reduce((acc, m, i, arr) => {
+          if (m.type === 'question') {
+              const qText = m.english;
+              const aText = arr[i+1]?.type === 'answer' ? arr[i+1].english : 'Not answered';
+              acc.push(`${qText}: ${aText}`);
+          }
+          return acc;
+      }, [] as string[]).join('\n');
+    
+    const result = await handleGenerateReport({
+      patientInformation: patientInfoString,
+      answers: qaPairs
     });
+
+    if (result.success && result.data) {
+      setSoapNote(result.data.soapNote);
+      setDdx(result.data.ddx);
+      setTreatmentPlan(result.data.treatmentPlan);
+      toast({ title: 'Report Generated', description: 'SOAP note, DDx, and treatment plan are ready.' });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Error Generating Report',
+        description: result.error,
+      });
+    }
+    setIsGeneratingReport(false);
   };
 
-  const translateMessage = (messageId: string, text: string) => {
+  const translateMessage = async (messageId: string, text: string) => {
     if (!text) return;
     
-    startTranslation(async () => {
-      const result = await handleTranslate({ text, targetLanguage: 'fa' });
-      if (result.success && result.data) {
-        setMessages(prevMessages => prevMessages.map(m => 
-            m.id === messageId ? { ...m, translation: result.data!.translatedText } : m
-        ));
-      } else {
-        toast({ variant: 'destructive', title: 'Translation Failed' });
-      }
-    });
+    setIsTranslating(true);
+    const result = await handleTranslate({ text, targetLanguage: 'fa' });
+    if (result.success && result.data) {
+      setMessages(prevMessages => prevMessages.map(m => 
+          m.id === messageId ? { ...m, translation: result.data!.translatedText } : m
+      ));
+    } else {
+      toast({ variant: 'destructive', title: 'Translation Failed' });
+    }
+    setIsTranslating(false);
   }
 
   const interviewStarted = messages.length > 0;

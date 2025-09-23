@@ -6,11 +6,32 @@ import { z } from 'genkit';
 
 export type PatientDetails = {
   name: string;
+  familyName: string;
+  fatherName: string;
+  dob: Date;
   age: number;
   gender: 'male' | 'female' | 'other';
-  dob: Date;
-  chiefComplaint: string;
-  consciousnessLevel: 'Alert' | 'Drowsy' | 'Unresponsive';
+  
+  ward: string;
+  room: string;
+  bed: string;
+  dateOfAdmission: Date;
+  attendingPhysician: string;
+
+  bp: string;
+  rr: string;
+  pr: string;
+  spo2: string;
+  
+  eyeColor: string;
+  skinColor: string;
+  bruises: string;
+  rashUlcers: string;
+
+  pastMedicalHistory: string;
+  pastSurgicalHistory: string;
+  medication: string;
+  familyHistory: string;
 };
 
 const ConversationHistorySchema = z.array(z.object({

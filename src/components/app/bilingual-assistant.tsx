@@ -48,13 +48,13 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   const [ddx, setDdx] = useState<DifferentialDiagnoses | null>(null);
   const [treatmentPlan, setTreatmentPlan] = useState<TreatmentPlan | null>(null);
 
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(true); // Start with generating the first question
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [interviewFinished, setInterviewFinished] = useState(false);
-  const [initialQuestionFetched, setInitialQuestionFetched] = useState(false);
+  
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-
+  const hasFetchedInitialQuestion = useRef(false);
 
   const { toast } = useToast();
 
@@ -99,12 +99,12 @@ export function BilingualAssistant({ patientDetails }: BilingualAssistantProps) 
   };
   
   useEffect(() => {
-    if (!initialQuestionFetched) {
-        setInitialQuestionFetched(true);
+    if (!hasFetchedInitialQuestion.current) {
+        hasFetchedInitialQuestion.current = true;
         fetchNextQuestion([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuestionFetched]);
+  }, []);
 
   useEffect(() => {
     if (scrollAreaRef.current) {

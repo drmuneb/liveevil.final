@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { History, Printer } from 'lucide-react';
 import { Logo } from '../icons/logo';
+import { ThemeToggle } from './theme-toggle';
 
 type AppHeaderProps = {
   onPrint: () => void;
@@ -26,6 +27,7 @@ export function AppHeader({ onPrint, onShowHistory }: AppHeaderProps) {
             <Printer className="mr-2 h-4 w-4" />
             Export PDF
           </Button>
+          <ThemeToggle />
         </div>
       </div>
     </header>

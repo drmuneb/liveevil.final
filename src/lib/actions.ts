@@ -61,11 +61,14 @@ export async function handleGenerateReport(input: SynthesizeBilingualSOAPNoteInp
     try {
         const [soapNoteResult, ddxResult, treatmentPlanResult] = await Promise.all([
             synthesizeBilingualSOAPNote(input),
-            suggestDifferentialDiagnoses({ patientData: input.patientInformation + '\n' + input.answers }),
+            suggestDifferentialDiagnoses({ 
+              patientInformation: input.patientInformation, 
+              answers: input.answers 
+            }),
             formulateBilingualTreatmentPlan({
-                patientDetails: input.patientInformation + '\n' + input.answers,
+                patientInformation: input.patientInformation,
+                answers: input.answers,
                 diagnosis: "Based on provided info.",
-                patientLanguagePreference: "english",
             })
         ]);
 

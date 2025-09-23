@@ -13,9 +13,10 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const SuggestDifferentialDiagnosesInputSchema = z.object({
-  patientData: z
+  patientInformation: z
     .string()
     .describe('The available patient data, including symptoms, medical history, and examination findings.'),
+  answers: z.string().describe('A summary of the questions and answers from the patient interview.'),
 });
 export type SuggestDifferentialDiagnosesInput = z.infer<
   typeof SuggestDifferentialDiagnosesInputSchema
@@ -47,7 +48,8 @@ const prompt = ai.definePrompt({
   output: {schema: SuggestDifferentialDiagnosesOutputSchema},
   prompt: `You are an AI assistant that generates a ranked list of potential differential diagnoses in Persian and English based on the available patient data.
 
-  Patient Data: {{{patientData}}}
+  Patient Information: {{{patientInformation}}}
+  Interview Answers: {{{answers}}}
 
   Please provide the differential diagnoses, their translations, and their ranks. Ensure that the diagnoses are relevant to the patient data provided.
 

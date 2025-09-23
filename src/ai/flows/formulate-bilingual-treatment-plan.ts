@@ -11,13 +11,11 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const FormulateBilingualTreatmentPlanInputSchema = z.object({
-  patientDetails: z
+  patientInformation: z
     .string()
     .describe('Comprehensive details of the patient including medical history, current symptoms, and examination findings.'),
+  answers: z.string().describe('A summary of the questions and answers from the patient interview.'),
   diagnosis: z.string().describe('The confirmed or suspected diagnosis.'),
-  patientLanguagePreference: z
-    .enum(['english', 'persian'])
-    .describe('The patient preferred language for the treatment plan.'),
 });
 export type FormulateBilingualTreatmentPlanInput = z.infer<
   typeof FormulateBilingualTreatmentPlanInputSchema
@@ -47,16 +45,14 @@ const formulateBilingualTreatmentPlanPrompt = ai.definePrompt({
   output: {schema: FormulateBilingualTreatmentPlanOutputSchema},
   prompt: `You are an expert medical professional formulating a treatment plan for a patient.
 
-  Based on the following patient details and diagnosis, create a comprehensive treatment plan in both English and Persian.
+  Based on the following patient details, interview answers, and diagnosis, create a comprehensive treatment plan in both English and Persian.
   The treatment plan should include medications, dosage adjustments, and test recommendations.
-  Pay close attention to the patient's language preference and tailor the language output accordingly.
 
-  Patient Details: {{{patientDetails}}}
+  Patient Information: {{{patientInformation}}}
+  Interview Answers: {{{answers}}}
   Diagnosis: {{{diagnosis}}}
-  Patient Language Preference: {{{patientLanguagePreference}}}
 
-  English Treatment Plan:
-  Persian Treatment Plan: `,
+  Provide the full treatment plan for each language.`,
 });
 
 const formulateBilingualTreatmentPlanFlow = ai.defineFlow(

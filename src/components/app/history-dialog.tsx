@@ -25,6 +25,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { SoapNoteDisplay } from './soap-note-display';
+import { DifferentialDiagnosisDisplay } from './differential-diagnosis-display';
+import { TreatmentPlanDisplay } from './treatment-plan-display';
 
 
 type HistoryDialogProps = {
@@ -70,27 +74,41 @@ export function HistoryDialog({
     return new Date(isoString).toLocaleString();
   }
 
-  // This is a temporary view. In a real app, we would load the full report view.
   const handleViewDetails = (entry: HistoryEntry) => {
-    // For now, we will just log it. A better implementation would be a detailed view.
     setSelectedEntry(entry);
-    console.log('Viewing details for:', entry);
   };
 
   if (selectedEntry) {
     return (
        <Dialog open={!!selectedEntry} onOpenChange={(open) => !open && setSelectedEntry(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Report for {selectedEntry.patientDetails.name} {selectedEntry.patientDetails.familyName}</DialogTitle>
             <DialogDescription>
               Generated on {formatTimestamp(selectedEntry.timestamp)}
             </DialogDescription>
           </DialogHeader>
-          <div className="text-sm">
-            <p><strong>Chief Complaint:</strong> {selectedEntry.patientDetails.chiefComplaint}</p>
-            <p><strong>SOAP Note (EN):</strong> {selectedEntry.soapNote.soapNoteEnglish}</p>
-            {/* Display other details as needed */}
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className='h-full'>
+                <div className='pr-6 space-y-4'>
+                    <Tabs defaultValue="soap" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="soap">SOAP Note</TabsTrigger>
+                        <TabsTrigger value="ddx">Differential Diagnosis</TabsTrigger>
+                        <TabsTrigger value="plan">Treatment Plan</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="soap">
+                            <SoapNoteDisplay data={selectedEntry.soapNote} />
+                        </TabsContent>
+                        <TabsContent value="ddx">
+                            <DifferentialDiagnosisDisplay data={selectedEntry.ddx} />
+                        </TabsContent>
+                        <TabsContent value="plan">
+                            <TreatmentPlanDisplay data={selectedEntry.treatmentPlan} />
+                        </TabsContent>
+                    </Tabs>
+                </div>
+            </ScrollArea>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelectedEntry(null)}>Close</Button>

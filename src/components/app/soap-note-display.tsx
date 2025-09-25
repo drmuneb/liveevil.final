@@ -1,62 +1,33 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { SoapNote } from '@/lib/types';
+import 'tailwindcss/tailwind.css';
 
 type SoapNoteDisplayProps = {
   data: SoapNote | null;
 };
 
-const Section = ({ title, content }: { title: string; content?: string }) => (
-  <div className="grid gap-1">
-    <h4 className="font-semibold text-primary">{title}</h4>
-    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{content || 'N/A'}</p>
-  </div>
-);
+// This is a simple markdown renderer. For a production app, a more robust library
+// like 'react-markdown' would be better.
+const MarkdownRenderer = ({ content, isRtl = false }: { content: string, isRtl?: boolean }) => {
+  const htmlContent = content
+    .replace(/### (.*)/g, '<h3 class="text-lg font-semibold text-primary mt-4 mb-2">$1</h3>')
+    .replace(/## (.*)/g, '<h2 class="text-xl font-bold border-b pb-2 mb-2">$1</h2>')
+    .replace(/\* \*\*(.*)\*\*: (.*)/g, '<li class="ml-4 list-disc"><strong>$1:</strong> $2</li>')
+    .replace(/\* (.*)/g, '<li class="ml-4 list-disc">$1</li>')
+    .replace(/1\. (.*)/g, '<li class="ml-4 list-decimal">$1</li>')
+    .replace(/2\. (.*)/g, '<li class="ml-4 list-decimal">$1</li>')
+    .replace(/3\. (.*)/g, '<li class="ml-4 list-decimal">$1</li>')
+    .replace(/\n/g, '<br />');
 
-const ParsedSoapNote = ({ note }: { note: string }) => {
-    const sections = {
-        S: '',
-        O: '',
-        A: '',
-        P: '',
-    };
-
-    const lines = note.split('\n');
-    let currentSection: 'S' | 'O' | 'A' | 'P' | null = null;
-
-    for (const line of lines) {
-        const trimmedLine = line.trim();
-        if (trimmedLine.startsWith('S:') || trimmedLine.startsWith('Subjective:')) {
-            currentSection = 'S';
-        } else if (trimmedLine.startsWith('O:') || trimmedLine.startsWith('Objective:')) {
-            currentSection = 'O';
-        } else if (trimmedLine.startsWith('A:') || trimmedLine.startsWith('Assessment:')) {
-            currentSection = 'A';
-        } else if (trimmedLine.startsWith('P:') || trimmedLine.startsWith('Plan:')) {
-            currentSection = 'P';
-        }
-
-        if (currentSection) {
-            // Remove the prefix from the line
-            const content = line.replace(/^(S:|O:|A:|P:|Subjective:|Objective:|Assessment:|Plan:)\s*/, '');
-            sections[currentSection] += content + '\n';
-        }
-    }
-    
-    return (
-        <div className="space-y-4">
-            <Section title="Subjective" content={sections.S.trim()} />
-            <Separator />
-            <Section title="Objective" content={sections.O.trim()} />
-            <Separator />
-            <Section title="Assessment" content={sections.A.trim()} />
-            <Separator />
-            <Section title="Plan" content={sections.P.trim()} />
-        </div>
-    );
+  return (
+    <div 
+      className={`prose prose-sm max-w-none text-muted-foreground ${isRtl ? 'rtl' : 'ltr'}`}
+      dangerouslySetInnerHTML={{ __html: htmlContent }} 
+    />
+  );
 };
 
 
@@ -89,10 +60,10 @@ export function SoapNoteDisplay({ data }: SoapNoteDisplayProps) {
             <TabsTrigger value="persian">Persian (فارسی)</TabsTrigger>
           </TabsList>
           <TabsContent value="english" className="pt-4">
-            <ParsedSoapNote note={data.soapNoteEnglish} />
+            <MarkdownRenderer content={data.soapNoteEnglish} />
           </TabsContent>
           <TabsContent value="persian" className="pt-4 text-right" dir="rtl">
-            <ParsedSoapNote note={data.soapNotePersian} />
+            <MarkdownRenderer content={data.soapNotePersian} isRtl={true} />
           </TabsContent>
         </Tabs>
       </CardContent>

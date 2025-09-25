@@ -18,8 +18,8 @@ const SynthesizeBilingualSOAPNoteInputSchema = z.object({
 export type SynthesizeBilingualSOAPNoteInput = z.infer<typeof SynthesizeBilingualSOAPNoteInputSchema>;
 
 const SynthesizeBilingualSOAPNoteOutputSchema = z.object({
-  soapNoteEnglish: z.string().describe('The generated SOAP note in English.'),
-  soapNotePersian: z.string().describe('The generated SOAP note in Persian.'),
+  soapNoteEnglish: z.string().describe('The generated SOAP note in English, formatted using Markdown.'),
+  soapNotePersian: z.string().describe('The generated SOAP note in Persian, formatted using Markdown.'),
 });
 
 export type SynthesizeBilingualSOAPNoteOutput = z.infer<typeof SynthesizeBilingualSOAPNoteOutputSchema>;
@@ -34,7 +34,7 @@ const prompt = ai.definePrompt({
   output: {schema: SynthesizeBilingualSOAPNoteOutputSchema},
   prompt: `You are an AI assistant specialized in generating medical SOAP notes in both English and Persian.
 
-  Given the following patient information and their answers to medical questions, synthesize a comprehensive SOAP note in both languages.
+  Given the following patient information and their answers to medical questions, synthesize a comprehensive SOAP note in both languages. Use Markdown for formatting (headings, lists, bold text).
 
   **Patient Information**: {{{patientInformation}}}
   **Interview Answers**: {{{answers}}}
@@ -46,11 +46,39 @@ const prompt = ai.definePrompt({
   - **A (Assessment)**: The primary diagnosis or differential diagnoses.
   - **P (Plan)**: The treatment plan, including tests, medications, and follow-up.
 
-  **Example Format**:
-  soapNoteEnglish: "S: Patient reports chest pain... \\nO: BP 140/90, HR 88... \\nA: Suspected Angina... \\nP: Recommend EKG..."
-  soapNotePersian: "S: بیمار از درد قفسه سینه شکایت دارد... \\nO: فشار خون 140/90، ضربان قلب 88... \\nA: مشکوک به آنژین... \\nP: توصیه به انجام نوار قلب..."
+  **Example English Format**:
+  ### Subjective (S)
+  Patient reports chest pain that started 2 hours ago...
 
-  Ensure your response strictly follows this format with the S:, O:, A:, P: prefixes for each section.
+  ### Objective (O)
+  - **Vitals**: BP 140/90, HR 88
+  - **Exam**: Lungs clear to auscultation.
+
+  ### Assessment (A)
+  1.  Suspected Angina
+  2.  Hypertension
+
+  ### Plan (P)
+  - Recommend EKG and cardiac enzyme test.
+  - Start Aspirin 81mg daily.
+
+  **Example Persian Format**:
+  ### Subjective (S)
+  بیمار از درد قفسه سینه که از ۲ ساعت پیش شروع شده شکایت دارد...
+
+  ### Objective (O)
+  - **علائم حیاتی**: فشار خون 140/90، ضربان قلب 88
+  - **معاینه**: ریه ها در سمع شفاف هستند.
+
+  ### Assessment (A)
+  1.  مشکوک به آنژین
+  2.  فشار خون بالا
+
+  ### Plan (P)
+  - توصیه به انجام نوار قلب و آزمایش آنزیم قلبی.
+  - شروع آسپرین ۸۱ میلی گرم روزانه.
+
+  Ensure your response provides a complete SOAP note in each language with the specified Markdown formatting.
   `,
 });
 

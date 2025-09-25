@@ -14,7 +14,8 @@ const MarkdownRenderer = ({ content, isRtl = false }: { content: string, isRtl?:
   // In a real app, you would use a library like 'marked' or 'react-markdown'.
   const htmlContent = content
     .replace(/### (.*)/g, '<h3 class="text-lg font-semibold text-primary mt-4 mb-2">$1</h3>')
-    .replace(/\* \*\*(.*)\*\*: (.*)/g, '<li><strong>$1:</strong> $2</li>')
+    .replace(/## (.*)/g, '<h2 class="text-xl font-bold border-b pb-2 mb-2">$1</h2>')
+    .replace(/\* \*\*(.*)\*\*: (.*)/g, '<li class="ml-4 list-disc"><strong>$1:</strong> $2</li>')
     .replace(/\* (.*)/g, '<li class="ml-4 list-disc">$1</li>')
     .replace(/\n/g, '<br />');
 
@@ -59,8 +60,8 @@ export function TreatmentPlanDisplay({ data }: TreatmentPlanDisplayProps) {
                 </div>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="prose prose-sm max-w-none text-muted-foreground">
-                {data.treatmentPlanEnglish}
+              <div className="p-4 bg-secondary/30 rounded-md border">
+                <MarkdownRenderer content={data.treatmentPlanEnglish} />
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -72,8 +73,8 @@ export function TreatmentPlanDisplay({ data }: TreatmentPlanDisplayProps) {
                 </div>
             </AccordionTrigger>
             <AccordionContent className="text-right" dir="rtl">
-              <div className="prose prose-sm max-w-none text-muted-foreground">
-                {data.treatmentPlanPersian}
+              <div className="p-4 bg-secondary/30 rounded-md border">
+                <MarkdownRenderer content={data.treatmentPlanPersian} isRtl={true} />
               </div>
             </AccordionContent>
           </AccordionItem>

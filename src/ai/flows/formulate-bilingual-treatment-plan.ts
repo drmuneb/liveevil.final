@@ -54,7 +54,6 @@ const formulateBilingualTreatmentPlanPrompt = ai.definePrompt({
   Structure the output for each language using Markdown with clear headings for each section. Use headings, lists, and bold text to make it readable and aesthetically pleasing.
 
   **Example English Format**:
-  \`\`\`markdown
   ### Medications
   *   **Aspirin**: 81mg daily
   *   **Lisinopril**: 10mg daily
@@ -66,10 +65,8 @@ const formulateBilingualTreatmentPlanPrompt = ai.definePrompt({
   ### Lifestyle Adjustments
   *   Follow a low-sodium diet.
   *   Engage in 30 minutes of moderate exercise, 3 times a week.
-  \`\`\`
   
   **Example Persian Format**:
-  \`\`\`markdown
   ### داروها
   *   **آسپرین**: ۸۱ میلی گرم روزانه
   *   **لیزینوپریل**: ۱۰ میلی گرم روزانه
@@ -81,7 +78,6 @@ const formulateBilingualTreatmentPlanPrompt = ai.definePrompt({
   ### اصلاح سبک زندگی
   *   رژیم غذایی کم سدیم را دنبال کنید.
   *   ۳ بار در هفته به مدت ۳۰ دقیقه ورزش متوسط داشته باشید.
-  \`\`\`
   
   Provide the full, well-structured treatment plan for each language in the specified Markdown format.`,
 });

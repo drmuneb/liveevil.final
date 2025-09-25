@@ -182,13 +182,13 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
     <Card className={cn('w-full', className)}>
       <CardHeader>
         <CardTitle>LiveEvil</CardTitle>
-        <CardDescription>Enter the details or upload a document for AI analysis.</CardDescription>
+        <CardDescription>Enter the details or upload a document for analysis.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className='relative border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center text-center'>
             <Upload className="h-10 w-10 text-muted-foreground" />
-            <p className='mt-4 font-semibold'>Upload Document for AI Analysis</p>
-            <p className="text-sm text-muted-foreground mt-1">بارگذاری سند برای تحلیل توسط هوش مصنوعی</p>
+            <p className='mt-4 font-semibold'>Upload Document for Analysis</p>
+            <p className="text-sm text-muted-foreground mt-1">بارگذاری سند برای تحلیل</p>
             <Button variant="link" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isAnalyzing}>Click to upload or drag and drop</Button>
             <p className="text-xs text-muted-foreground">Handwritten notes, lab reports, etc.</p>
             <input
@@ -228,7 +228,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
                   name="perspective"
                   render={({ field }) => (
                     <FormItem className="space-y-3">
-                      <FormLabel>Who is the AI assistant talking to?</FormLabel>
+                      <FormLabel>Who is the assistant talking to?</FormLabel>
                       <FormControl>
                         <RadioGroup
                           onValueChange={field.onChange}
@@ -362,7 +362,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
                 </div>
             </Section>
 
-            <Button type="submit" className="w-full" size="lg">Start AI Assistant</Button>
+            <Button type="submit" className="w-full" size="lg">Start Assistant</Button>
           </form>
         </Form>
       </CardContent>

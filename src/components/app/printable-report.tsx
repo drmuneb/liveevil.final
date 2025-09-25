@@ -78,7 +78,7 @@ export function PrintableReport({ patientDetails, messages, soapNote, ddx, treat
                     <Card className="border-gray-400">
                         <CardHeader>
                             <CardTitle>Consultation History</CardTitle>
-                            <CardDescription>The full Q&A session with the AI assistant.</CardDescription>
+                            <CardDescription>The full Q&A session with the assistant.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {messages.map((msg, index) => (

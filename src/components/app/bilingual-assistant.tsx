@@ -229,7 +229,7 @@ export function BilingualAssistant({
       ) : (
         <Card className="flex flex-col h-[75vh]">
             <CardHeader>
-                <CardTitle>Bilingual AI Assistant</CardTitle>
+                <CardTitle>Bilingual Assistant</CardTitle>
                 <CardDescription>Answer the questions to build the patient's report.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">

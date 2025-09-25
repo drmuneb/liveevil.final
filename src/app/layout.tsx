@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/app/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'Bilingual SOAP Assistant',
-  description: 'AI-powered assistant for generating bilingual medical notes.',
+  title: 'LiveEvil',
+  description: 'An assistant for generating bilingual medical notes.',
 };
 
 export default function RootLayout({

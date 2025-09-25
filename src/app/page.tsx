@@ -76,7 +76,7 @@ export default function Home() {
         />
       </div>
        <footer className="text-center p-4 text-muted-foreground text-sm print:hidden">
-          Developed by <a href="https://github.com/muneebwanee" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Muneeb Wani</a>
+          Developed by <a href="https://github.com/muneebwanee" target="_blank" rel="noopener noreferrer" className="font-medium text-primary/80 hover:text-primary transition-colors">Muneeb Wani</a>
         </footer>
     </div>
   );

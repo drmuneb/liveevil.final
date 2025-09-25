@@ -95,6 +95,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
       gender: undefined,
       perspective: 'first-person',
       dob: '',
+      age: '' as unknown as number, // Fix: Initialize with empty string
       dateOfAdmission: '',
       ward: '',
       room: '',

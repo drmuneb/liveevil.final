@@ -3,27 +3,81 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { TreatmentPlan } from '@/lib/types';
-import 'tailwindcss/tailwind.css';
 
 type TreatmentPlanDisplayProps = {
   data: TreatmentPlan | null;
 };
 
 const MarkdownRenderer = ({ content, isRtl = false }: { content: string, isRtl?: boolean }) => {
-  // A simple markdown to HTML converter for demonstration.
-  // In a real app, you would use a library like 'marked' or 'react-markdown'.
-  const htmlContent = content
-    .replace(/### (.*)/g, '<h3 class="text-lg font-semibold text-primary mt-4 mb-2">$1</h3>')
-    .replace(/## (.*)/g, '<h2 class="text-xl font-bold border-b pb-2 mb-2">$1</h2>')
-    .replace(/\* \*\*(.*)\*\*: (.*)/g, '<li class="ml-4 list-disc"><strong>$1:</strong> $2</li>')
-    .replace(/\* (.*)/g, '<li class="ml-4 list-disc">$1</li>')
-    .replace(/\n/g, '<br />');
+  const processLine = (line: string) => {
+    return line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  }
+
+  const lines = content.split('\n');
+  const elements = [];
+  let currentList: string[] = [];
+  let listType: 'ul' | 'ol' | null = null;
+
+  lines.forEach((line, index) => {
+    const trimmedLine = line.trim();
+    const isListItem = trimmedLine.startsWith('* ') || trimmedLine.match(/^\d+\.\s/);
+
+    if (isListItem) {
+      const currentListType = trimmedLine.startsWith('* ') ? 'ul' : 'ol';
+      if (listType && currentListType !== listType) {
+        // End previous list
+        const ListTag = listType;
+        elements.push(
+          <ListTag key={`list-${index}-prev`} className="list-inside space-y-1">
+            {currentList.map((item, i) => <li key={i} dangerouslySetInnerHTML={{ __html: processLine(item) }} />)}
+          </ListTag>
+        );
+        currentList = [];
+      }
+      
+      listType = currentListType;
+      currentList.push(trimmedLine.replace(/^\* |^\d+\.\s/, ''));
+    } else {
+      if (currentList.length > 0 && listType) {
+         // End of a list block because the current line is not a list item
+        const ListTag = listType;
+        elements.push(
+          <ListTag key={`list-${index}`} className={`list-inside space-y-1 ${listType === 'ol' ? 'list-decimal' : 'list-disc'}`}>
+            {currentList.map((item, i) => <li key={i} dangerouslySetInnerHTML={{ __html: processLine(item) }} />)}
+          </ListTag>
+        );
+        currentList = [];
+        listType = null;
+      }
+      
+      if (trimmedLine.startsWith('### ')) {
+        elements.push(<h3 key={index} className="text-lg font-semibold text-primary mt-4 mb-2">{trimmedLine.substring(4)}</h3>);
+      } else if (trimmedLine) {
+        // Line is not a list item, but part of the previous item (multiline)
+        if (currentList.length > 0) {
+           currentList[currentList.length - 1] += ' ' + trimmedLine;
+        } else {
+          // It's a paragraph
+           elements.push(<p key={index} dangerouslySetInnerHTML={{__html: processLine(trimmedLine)}} />);
+        }
+      }
+    }
+  });
+
+  // Add any remaining list items
+  if (currentList.length > 0 && listType) {
+    const ListTag = listType;
+    elements.push(
+      <ListTag key="list-final" className={`list-inside space-y-1 ${listType === 'ol' ? 'list-decimal' : 'list-disc'}`}>
+        {currentList.map((item, i) => <li key={i} dangerouslySetInnerHTML={{ __html: processLine(item) }} />)}
+      </ListTag>
+    );
+  }
 
   return (
-    <div 
-      className={`prose prose-sm max-w-none text-muted-foreground ${isRtl ? 'rtl' : 'ltr'}`}
-      dangerouslySetInnerHTML={{ __html: htmlContent }} 
-    />
+    <div className={`prose prose-sm max-w-none text-muted-foreground ${isRtl ? 'rtl' : 'ltr'}`}>
+      {elements}
+    </div>
   );
 };
 

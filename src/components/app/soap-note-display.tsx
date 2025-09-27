@@ -3,58 +3,98 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import type { SoapNote } from '@/lib/types';
-import 'tailwindcss/tailwind.css';
 
 type SoapNoteDisplayProps = {
   data: SoapNote | null;
 };
 
 const MarkdownRenderer = ({ content, isRtl = false }: { content: string; isRtl?: boolean }) => {
-  const sections = {
-    'Subjective (S)': '',
-    'Objective (O)': '',
-    'Assessment (A)': '',
-    'Plan (P)': '',
-  };
+    const renderContent = (text: string) => {
+        const lines = text.trim().split('\n');
+        let html = '';
+        let inList = false;
 
-  // A very basic parser to split content into S, O, A, P sections
-  // It looks for the headings (e.g., ### Subjective)
-  let currentSection: keyof typeof sections | null = null;
-  content.split('\n').forEach(line => {
-    if (line.includes('Subjective')) currentSection = 'Subjective (S)';
-    else if (line.includes('Objective')) currentSection = 'Objective (O)';
-    else if (line.includes('Assessment')) currentSection = 'Assessment (A)';
-    else if (line.includes('Plan')) currentSection = 'Plan (P)';
-    else if (currentSection && line.trim()) {
-      sections[currentSection] += line + '\n';
-    }
-  });
+        lines.forEach(line => {
+            line = line.trim();
+            if (!line) return;
 
-  const renderContent = (text: string) => {
-    const html = text
-      .trim()
-      .replace(/^\* \*\*(.*)\*\*:(.*)/gm, '<p><strong>$1:</strong>$2</p>')
-      .replace(/^\* (.*)/gm, '<li class="list-disc ml-4">$1</li>')
-      .replace(/(\d+)\. (.*)/gm, '<li class="list-decimal ml-4">$2</li>')
-      .replace(/\n/g, '<br />')
-      // Clean up extra breaks from lists
-      .replace(/<\/li><br \/>/g, '</li>');
+            // Handle list items
+            if (line.startsWith('* ') || line.startsWith('1. ') || /^\d+\./.test(line.startsWith)) {
+                if (!inList) {
+                    html += line.startsWith('* ') ? '<ul>' : '<ol>';
+                    inList = true;
+                }
+                const itemContent = line.replace(/^\* |^\d+\. /, '')
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                html += `<li>${itemContent}</li>`;
+            } else {
+                if (inList) {
+                    html += inList === 'ul' ? '</ul>' : '</ol>';
+                    inList = false;
+                }
+                 // Handle headings
+                if (line.startsWith('### ')) {
+                    html += `<h3>${line.substring(4)}</h3>`;
+                } else if (line.startsWith('## ')) {
+                    html += `<h2>${line.substring(3)}</h2>`;
+                } else if (line.startsWith('# ')) {
+                    html += `<h1>${line.substring(2)}</h1>`;
+                } else {
+                    html += `<p>${line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
+                }
+            }
+        });
 
-    return <div dangerouslySetInnerHTML={{ __html: `<ul>${html}</ul>`.replace(/<ul><br \/>/g, '<ul>').replace(/<br \/><ul>/g, '<ul>') }} />;
-  };
+        if (inList) {
+            html += inList === 'ul' ? '</ul>' : '</ol>';
+        }
+
+        return <div dangerouslySetInnerHTML={{ __html: html }} />;
+    };
+
+  const renderSections = (note: string) => {
+    const sections: Record<string, string> = {
+      'Subjective': '',
+      'Objective': '',
+      'Assessment': '',
+      'Plan': ''
+    };
+    const sectionKeys = Object.keys(sections);
+    let currentSection: string | null = null;
+    
+    note.split('\n').forEach(line => {
+      const trimmedLine = line.trim();
+      const foundSection = sectionKeys.find(key => trimmedLine.includes(key));
+
+      if (foundSection) {
+        currentSection = foundSection;
+      } else if (currentSection && trimmedLine) {
+        sections[currentSection] += line + '\n';
+      }
+    });
+
+    return (
+        <div className="space-y-4">
+            {sectionKeys.map(key => {
+                if(sections[key].trim()){
+                    return (
+                        <div key={key}>
+                            <h4 className="text-md font-semibold text-primary mb-1">{key}</h4>
+                            <div className="prose prose-sm max-w-none text-muted-foreground">
+                                {renderContent(sections[key])}
+                            </div>
+                        </div>
+                    )
+                }
+                return null;
+            })}
+        </div>
+    )
+  }
 
   return (
-    <div className={`space-y-4 ${isRtl ? 'rtl' : 'ltr'}`}>
-      {Object.entries(sections).map(([title, sectionContent]) => (
-        sectionContent.trim() ? (
-          <div key={title}>
-            <h4 className="text-md font-semibold text-primary mb-1">{title}</h4>
-            <div className="prose prose-sm max-w-none text-muted-foreground">
-              {renderContent(sectionContent)}
-            </div>
-          </div>
-        ) : null
-      ))}
+    <div className={`prose prose-sm max-w-none text-muted-foreground ${isRtl ? 'rtl' : 'ltr'}`}>
+        {renderSections(content)}
     </div>
   );
 };

@@ -19,7 +19,7 @@ import type {
   TreatmentPlan,
   Message,
 } from '@/lib/types';
-import { Bot, Loader2, Send, Sparkles } from 'lucide-react';
+import { Bot, Loader2, Send, Sparkles, AlertTriangle } from 'lucide-react';
 import { SoapNoteDisplay } from './soap-note-display';
 import { DifferentialDiagnosisDisplay } from './differential-diagnosis-display';
 import { TreatmentPlanDisplay } from './treatment-plan-display';
@@ -210,6 +210,15 @@ export function BilingualAssistant({
     setIsTranslating(false);
   }
 
+  const handleForceFinish = () => {
+    setInterviewFinished(true);
+    toast({
+        title: "Interview Finished Manually",
+        description: "You can now generate the full report.",
+        variant: "default",
+    });
+  }
+
   const interviewStarted = messages.length > 0;
   const lastMessage = messages.length > 0 ? messages[messages.length-1] : null;
   const isLastMessageQuestion = lastMessage?.type === 'question';
@@ -305,6 +314,12 @@ export function BilingualAssistant({
                             />
                             <Button onClick={() => handleAnswerSubmit()} disabled={!currentAnswer.trim() || isGenerating || !isLastMessageQuestion} size="icon">
                                 <Send />
+                            </Button>
+                        </div>
+                         <div className='flex justify-end'>
+                            <Button variant="link" size="sm" className="text-muted-foreground h-auto p-0" onClick={handleForceFinish}>
+                                <AlertTriangle className="mr-1 h-3 w-3" />
+                                Skip questions and generate report
                             </Button>
                         </div>
                     </div>

@@ -33,7 +33,7 @@ const formSchema = z.object({
   dateOfAdmission: z.string().min(1, 'Date of admission is required.'),
   attendingPhysician: z.string().optional(),
 
-  chiefComplaint: z.string().optional(),
+  chiefComplaint: z.string().min(1, 'Chief complaint is required.'),
   
   bp: z.string().optional(),
   rr: z.string().optional(),
@@ -272,6 +272,7 @@ export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidA
                     name="chiefComplaint"
                     render={({ field }) => (
                         <FormItem>
+                            <FormLabel>Chief Complaint * <span className='text-muted-foreground text-xs'>(شکایت اصلی)</span></FormLabel>
                             <FormControl>
                                 <Textarea
                                 {...field}

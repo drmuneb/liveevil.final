@@ -11,6 +11,12 @@ import { ApiKeyDialog } from '@/components/app/api-key-dialog';
 
 const API_KEY_STORAGE_KEY = 'google_ai_api_key';
 
+type PendingAction =
+  | { type: 'analyzeDoc'; file: File }
+  | { type: 'startAssistant'; details: PatientDetails }
+  | null;
+
+
 export default function Home() {
   const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -18,6 +24,7 @@ export default function Home() {
   // API Key management
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   useEffect(() => {
     const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
@@ -30,11 +37,22 @@ export default function Home() {
 
   const handleSaveApiKey = (key: string) => {
     if (key) {
-      setApiKey(key);
-      localStorage.setItem(API_KEY_STORAGE_KEY, key);
+      const newKey = key.trim();
+      setApiKey(newKey);
+      localStorage.setItem(API_KEY_STORAGE_KEY, newKey);
       setIsApiKeyDialogOpen(false);
+      
+      if (pendingAction?.type === 'startAssistant') {
+        setPatientDetails(pendingAction.details);
+        setPendingAction(null);
+      }
     }
   };
+  
+  const handleInvalidApiKey = (action: PendingAction) => {
+    setPendingAction(action);
+    setIsApiKeyDialogOpen(true);
+  }
 
   // State for the full report
   const [messages, setMessages] = useState<Message[]>([]);
@@ -55,6 +73,11 @@ export default function Home() {
     setTreatmentPlan(null);
   }
 
+  const handleFormSubmit = (details: PatientDetails) => {
+    setPatientDetails(details);
+  }
+
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40 print:bg-white">
       <AppHeader onPrint={handlePrint} onShowHistory={() => setIsHistoryOpen(true)} onShowSettings={() => setIsApiKeyDialogOpen(true)} />
@@ -62,19 +85,21 @@ export default function Home() {
         className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8 print:hidden"
       >
         <div className="w-full max-w-4xl mx-auto grid gap-4 md:gap-8">
-          {!apiKey ? (
-            <div className='text-center p-8 bg-card rounded-lg'>
+          {!apiKey && !isApiKeyDialogOpen ? (
+             <div className='text-center p-8 bg-card rounded-lg'>
               <p className='text-muted-foreground'>Please set your Google AI API key in the settings to begin.</p>
             </div>
           ) : !patientDetails ? (
             <PatientDetailsForm
-              onFormSubmit={setPatientDetails}
-              apiKey={apiKey}
-              onInvalidApiKey={() => setIsApiKeyDialogOpen(true)}
+              onFormSubmit={handleFormSubmit}
+              apiKey={apiKey || ''}
+              onInvalidApiKey={(file) => handleInvalidApiKey({ type: 'analyzeDoc', file })}
+              pendingFile={pendingAction?.type === 'analyzeDoc' ? pendingAction.file : undefined}
+              clearPendingFile={() => setPendingAction(null)}
             />
           ) : (
             <BilingualAssistant 
-              apiKey={apiKey}
+              apiKey={apiKey || ''}
               patientDetails={patientDetails} 
               onSessionEnd={startNewSession}
               messages={messages}
@@ -85,7 +110,7 @@ export default function Home() {
               setDdx={setDdx}
               treatmentPlan={treatmentPlan}
               setTreatmentPlan={setTreatmentPlan}
-              onInvalidApiKey={() => setIsApiKeyDialogOpen(true)}
+              onInvalidApiKey={() => handleInvalidApiKey({ type: 'startAssistant', details: patientDetails })}
             />
           )}
         </div>

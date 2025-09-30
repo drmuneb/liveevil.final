@@ -56,7 +56,9 @@ type PatientDetailsFormProps = {
   onFormSubmit: (data: PatientDetails) => void;
   className?: string;
   apiKey: string;
-  onInvalidApiKey: () => void;
+  onInvalidApiKey: (file: File) => void;
+  pendingFile?: File;
+  clearPendingFile: () => void;
 };
 
 const Section = ({ icon, title, description, children, defaultOpen = false }: { icon: React.ReactNode, title: string, description: string, children: React.ReactNode, defaultOpen?: boolean }) => {
@@ -84,7 +86,7 @@ const Section = ({ icon, title, description, children, defaultOpen = false }: { 
     )
 }
 
-export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidApiKey }: PatientDetailsFormProps) {
+export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidApiKey, pendingFile, clearPendingFile }: PatientDetailsFormProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -98,7 +100,7 @@ export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidA
       gender: undefined,
       perspective: 'first-person',
       dob: '',
-      age: '' as unknown as number, // Fix: Initialize with empty string
+      age: '' as unknown as number,
       dateOfAdmission: '',
       ward: '',
       room: '',
@@ -120,62 +122,74 @@ export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidA
     },
   });
 
+  const analyzeFile = async (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const dataUri = reader.result as string;
+      setIsAnalyzing(true);
+      const result = await handleAnalyzeDocument({ apiKey, photoDataUri: dataUri });
+      setIsAnalyzing(false);
+
+      if (result.success && result.data) {
+        const {
+          name, familyName, fatherName, dob, age, gender,
+          ward, room, bed, dateOfAdmission, attendingPhysician,
+          chiefComplaint,
+          bp, rr, pr, spo2,
+          eyeColor, skinColor, bruises, rashUlcers,
+          pastMedicalHistory, pastSurgicalHistory, medication, familyHistory
+        } = result.data;
+        
+        if (name) form.setValue('name', name);
+        if (familyName) form.setValue('familyName', familyName);
+        if (fatherName) form.setValue('fatherName', fatherName);
+        if (dob) form.setValue('dob', dob);
+        if (age) form.setValue('age', age);
+        if (gender) form.setValue('gender', gender);
+        if (ward) form.setValue('ward', ward);
+        if (room) form.setValue('room', room);
+        if (bed) form.setValue('bed', bed);
+        if (dateOfAdmission) form.setValue('dateOfAdmission', dateOfAdmission);
+        if (attendingPhysician) form.setValue('attendingPhysician', attendingPhysician);
+        if (chiefComplaint) form.setValue('chiefComplaint', chiefComplaint);
+        if (bp) form.setValue('bp', bp);
+        if (rr) form.setValue('rr', rr);
+        if (pr) form.setValue('pr', pr);
+        if (spo2) form.setValue('spo2', spo2);
+        if (eyeColor) form.setValue('eyeColor', eyeColor);
+        if (skinColor) form.setValue('skinColor', skinColor);
+        if (bruises) form.setValue('bruises', bruises);
+        if (rashUlcers) form.setValue('rashUlcers', rashUlcers);
+        if (pastMedicalHistory) form.setValue('pastMedicalHistory', pastMedicalHistory);
+        if (pastSurgicalHistory) form.setValue('pastSurgicalHistory', pastSurgicalHistory);
+        if (medication) form.setValue('medication', medication);
+        if (familyHistory) form.setValue('familyHistory', familyHistory);
+
+        toast({ title: 'Document Analyzed', description: 'Patient details have been extracted.' });
+      } else {
+        if (result.error?.includes('Invalid API key')) {
+          toast({ variant: 'destructive', title: 'Invalid API Key', description: "Please check your Google AI API key in the settings." });
+          onInvalidApiKey(file);
+        } else {
+          toast({ variant: 'destructive', title: 'Analysis Failed', description: result.error });
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  useEffect(() => {
+    if (pendingFile && apiKey) {
+      analyzeFile(pendingFile);
+      clearPendingFile();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingFile, apiKey]);
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const dataUri = reader.result as string;
-        setIsAnalyzing(true);
-        const result = await handleAnalyzeDocument({ apiKey, photoDataUri: dataUri });
-        setIsAnalyzing(false);
-
-        if (result.success && result.data) {
-          const {
-            name, familyName, fatherName, dob, age, gender,
-            ward, room, bed, dateOfAdmission, attendingPhysician,
-            chiefComplaint,
-            bp, rr, pr, spo2,
-            eyeColor, skinColor, bruises, rashUlcers,
-            pastMedicalHistory, pastSurgicalHistory, medication, familyHistory
-          } = result.data;
-          
-          if (name) form.setValue('name', name);
-          if (familyName) form.setValue('familyName', familyName);
-          if (fatherName) form.setValue('fatherName', fatherName);
-          if (dob) form.setValue('dob', dob);
-          if (age) form.setValue('age', age);
-          if (gender) form.setValue('gender', gender);
-          if (ward) form.setValue('ward', ward);
-          if (room) form.setValue('room', room);
-          if (bed) form.setValue('bed', bed);
-          if (dateOfAdmission) form.setValue('dateOfAdmission', dateOfAdmission);
-          if (attendingPhysician) form.setValue('attendingPhysician', attendingPhysician);
-          if (chiefComplaint) form.setValue('chiefComplaint', chiefComplaint);
-          if (bp) form.setValue('bp', bp);
-          if (rr) form.setValue('rr', rr);
-          if (pr) form.setValue('pr', pr);
-          if (spo2) form.setValue('spo2', spo2);
-          if (eyeColor) form.setValue('eyeColor', eyeColor);
-          if (skinColor) form.setValue('skinColor', skinColor);
-          if (bruises) form.setValue('bruises', bruises);
-          if (rashUlcers) form.setValue('rashUlcers', rashUlcers);
-          if (pastMedicalHistory) form.setValue('pastMedicalHistory', pastMedicalHistory);
-          if (pastSurgicalHistory) form.setValue('pastSurgicalHistory', pastSurgicalHistory);
-          if (medication) form.setValue('medication', medication);
-          if (familyHistory) form.setValue('familyHistory', familyHistory);
-
-          toast({ title: 'Document Analyzed', description: 'Patient details have been extracted.' });
-        } else {
-          if (result.error?.includes('Invalid API key')) {
-            toast({ variant: 'destructive', title: 'Invalid API Key', description: "Please check your Google AI API key in the settings." });
-            onInvalidApiKey();
-          } else {
-            toast({ variant: 'destructive', title: 'Analysis Failed', description: result.error });
-          }
-        }
-      };
-      reader.readAsDataURL(file);
+      analyzeFile(file);
     }
      if(fileInputRef.current) {
         fileInputRef.current.value = '';

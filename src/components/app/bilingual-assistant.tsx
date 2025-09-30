@@ -119,12 +119,15 @@ export function BilingualAssistant({
   };
   
   useEffect(() => {
+    // Only fetch the initial question if there are no messages and it hasn't been fetched before.
     if (!hasFetchedInitialQuestion && messages.length === 0) {
         setHasFetchedInitialQuestion(true);
+        // We pass an empty history to signal it's the first question.
         fetchNextQuestion([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasFetchedInitialQuestion, messages.length]);
+  }, [apiKey, patientDetails, hasFetchedInitialQuestion]);
+
 
   useEffect(() => {
     if (scrollAreaRef.current) {

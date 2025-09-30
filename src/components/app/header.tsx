@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { History, Printer, Settings } from 'lucide-react';
+import { History, Printer, Settings, KeyRound } from 'lucide-react';
 import { Logo } from '../icons/logo';
 import { ThemeToggle } from './theme-toggle';
 import {
@@ -9,14 +9,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
 type AppHeaderProps = {
   onPrint: () => void;
   onShowHistory: () => void;
+  onShowSettings: () => void;
 };
 
-export function AppHeader({ onPrint, onShowHistory }: AppHeaderProps) {
+export function AppHeader({ onPrint, onShowHistory, onShowSettings }: AppHeaderProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 print:hidden">
       <div className="flex items-center gap-2">
@@ -40,6 +42,11 @@ export function AppHeader({ onPrint, onShowHistory }: AppHeaderProps) {
               <DropdownMenuItem onClick={onPrint}>
                 <Printer className="mr-2 h-4 w-4" />
                 <span>Export PDF</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onShowSettings}>
+                <KeyRound className="mr-2 h-4 w-4" />
+                <span>API Key Settings</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

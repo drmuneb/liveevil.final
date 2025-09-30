@@ -54,6 +54,7 @@ const formSchema = z.object({
 type PatientDetailsFormProps = {
   onFormSubmit: (data: PatientDetails) => void;
   className?: string;
+  apiKey: string;
 };
 
 const Section = ({ icon, title, description, children, defaultOpen = false }: { icon: React.ReactNode, title: string, description: string, children: React.ReactNode, defaultOpen?: boolean }) => {
@@ -81,7 +82,7 @@ const Section = ({ icon, title, description, children, defaultOpen = false }: { 
     )
 }
 
-export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFormProps) {
+export function PatientDetailsForm({ onFormSubmit, className, apiKey }: PatientDetailsFormProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -124,7 +125,7 @@ export function PatientDetailsForm({ onFormSubmit, className }: PatientDetailsFo
       reader.onloadend = async () => {
         const dataUri = reader.result as string;
         setIsAnalyzing(true);
-        const result = await handleAnalyzeDocument({ photoDataUri: dataUri });
+        const result = await handleAnalyzeDocument({ apiKey, photoDataUri: dataUri });
         setIsAnalyzing(false);
 
         if (result.success && result.data) {

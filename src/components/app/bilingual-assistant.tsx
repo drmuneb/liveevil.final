@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 
 type BilingualAssistantProps = {
+  apiKey: string;
   patientDetails: PatientDetails;
   onSessionEnd: () => void;
   messages: Message[];
@@ -43,6 +44,7 @@ type BilingualAssistantProps = {
 };
 
 export function BilingualAssistant({ 
+  apiKey,
   patientDetails, 
   onSessionEnd,
   messages,
@@ -79,6 +81,7 @@ export function BilingualAssistant({
     }));
 
     const result = await handleGenerateNextQuestion({
+      apiKey,
       patientInformation: patientInfoString,
       conversationHistory: conversation,
       perspective: patientDetails.perspective,
@@ -175,6 +178,7 @@ export function BilingualAssistant({
       }, [] as string[]).join('\n');
     
     const result = await handleGenerateReport({
+      apiKey,
       patientInformation: patientInfoString,
       answers: qaPairs
     });
@@ -199,7 +203,7 @@ export function BilingualAssistant({
     if (!text) return;
     
     setIsTranslating(true);
-    const result = await handleTranslate({ text, targetLanguage: 'fa' });
+    const result = await handleTranslate({ apiKey, text, targetLanguage: 'fa' });
     if (result.success && result.data) {
       setMessages(prevMessages => prevMessages.map(m => 
           m.id === messageId ? { ...m, translation: result.data!.translatedText } : m

@@ -1,4 +1,3 @@
-// src/ai/flows/generate-bilingual-questions.ts
 'use server';
 
 /**
@@ -11,11 +10,14 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type {ApiKeyInput} from '@/lib/types';
 
 const GenerateBilingualQuestionsInputSchema = z.object({
   patientDetails: z
     .string()
-    .describe('Details about the patient, including name, age, and medical history.'),
+    .describe(
+      'Details about the patient, including name, age, and medical history.'
+    ),
   consciousnessLevel: z
     .string()
     .describe(
@@ -31,10 +33,15 @@ const GenerateBilingualQuestionsOutputSchema = z.object({
     z.object({
       english: z.string().describe('The question in English.'),
       persian: z.string().describe('The question in Persian (Farsi).'),
-      options: z.array(z.object({
-        english: z.string(),
-        persian: z.string(),
-      })).optional().describe('An optional list of multiple-choice answers.'),
+      options: z
+        .array(
+          z.object({
+            english: z.string(),
+            persian: z.string(),
+          })
+        )
+        .optional()
+        .describe('An optional list of multiple-choice answers.'),
     })
   ),
 });
@@ -43,16 +50,13 @@ export type GenerateBilingualQuestionsOutput = z.infer<
 >;
 
 export async function generateBilingualQuestions(
-  input: GenerateBilingualQuestionsInput
+  input: GenerateBilingualQuestionsInput & ApiKeyInput
 ): Promise<GenerateBilingualQuestionsOutput> {
-  return generateBilingualQuestionsFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'generateBilingualQuestionsPrompt',
-  input: {schema: GenerateBilingualQuestionsInputSchema},
-  output: {schema: GenerateBilingualQuestionsOutputSchema},
-  prompt: `You are a medical AI assistant that generates relevant medical questions in both Persian and English, tailored to the patient's condition and level of consciousness.
+  const prompt = ai({apiKey: input.apiKey}).definePrompt({
+    name: 'generateBilingualQuestionsPrompt',
+    input: {schema: GenerateBilingualQuestionsInputSchema},
+    output: {schema: GenerateBilingualQuestionsOutputSchema},
+    prompt: `You are a medical AI assistant that generates relevant medical questions in both Persian and English, tailored to the patient's condition and level of consciousness.
 
   Patient Details: {{{patientDetails}}}
   Consciousness Level: {{{consciousnessLevel}}}
@@ -85,16 +89,8 @@ const prompt = ai.definePrompt({
     ]
   }
   `,
-});
+  });
 
-const generateBilingualQuestionsFlow = ai.defineFlow(
-  {
-    name: 'generateBilingualQuestionsFlow',
-    inputSchema: GenerateBilingualQuestionsInputSchema,
-    outputSchema: GenerateBilingualQuestionsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+  const {output} = await prompt(input);
+  return output!;
+}

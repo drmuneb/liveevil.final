@@ -9,12 +9,17 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type {ApiKeyInput} from '@/lib/types';
 
 const FormulateBilingualTreatmentPlanInputSchema = z.object({
-  patientInformation: z
+  patientInformation: z.string().describe(
+    'Comprehensive details of the patient including medical history, current symptoms, and examination findings.'
+  ),
+  answers: z
     .string()
-    .describe('Comprehensive details of the patient including medical history, current symptoms, and examination findings.'),
-  answers: z.string().describe('A summary of the questions and answers from the patient interview.'),
+    .describe(
+      'A summary of the questions and answers from the patient interview.'
+    ),
   diagnosis: z.string().describe('The confirmed or suspected diagnosis.'),
 });
 export type FormulateBilingualTreatmentPlanInput = z.infer<
@@ -22,28 +27,27 @@ export type FormulateBilingualTreatmentPlanInput = z.infer<
 >;
 
 const FormulateBilingualTreatmentPlanOutputSchema = z.object({
-  treatmentPlanEnglish: z
-    .string()
-    .describe('The treatment plan in English, including medications, dosage adjustments, and test recommendations, formatted in Markdown.'),
-  treatmentPlanPersian: z
-    .string()
-    .describe('The treatment plan in Persian, including medications, dosage adjustments, and test recommendations, formatted in Markdown.'),
+  treatmentPlanEnglish: z.string().describe(
+    'The treatment plan in English, including medications, dosage adjustments, and test recommendations, formatted in Markdown.'
+  ),
+  treatmentPlanPersian: z.string().describe(
+    'The treatment plan in Persian, including medications, dosage adjustments, and test recommendations, formatted in Markdown.'
+  ),
 });
 export type FormulateBilingualTreatmentPlanOutput = z.infer<
   typeof FormulateBilingualTreatmentPlanOutputSchema
 >;
 
 export async function formulateBilingualTreatmentPlan(
-  input: FormulateBilingualTreatmentPlanInput
+  input: FormulateBilingualTreatmentPlanInput & ApiKeyInput
 ): Promise<FormulateBilingualTreatmentPlanOutput> {
-  return formulateBilingualTreatmentPlanFlow(input);
-}
-
-const formulateBilingualTreatmentPlanPrompt = ai.definePrompt({
-  name: 'formulateBilingualTreatmentPlanPrompt',
-  input: {schema: FormulateBilingualTreatmentPlanInputSchema},
-  output: {schema: FormulateBilingualTreatmentPlanOutputSchema},
-  prompt: `You are an expert medical professional formulating a treatment plan.
+  const formulateBilingualTreatmentPlanPrompt = ai({
+    apiKey: input.apiKey,
+  }).definePrompt({
+    name: 'formulateBilingualTreatmentPlanPrompt',
+    input: {schema: FormulateBilingualTreatmentPlanInputSchema},
+    output: {schema: FormulateBilingualTreatmentPlanOutputSchema},
+    prompt: `You are an expert medical professional formulating a treatment plan.
 
   Based on the patient details, interview, and diagnosis, create a comprehensive treatment plan in both English and Persian.
 
@@ -80,16 +84,7 @@ const formulateBilingualTreatmentPlanPrompt = ai.definePrompt({
   *   ۳ بار در هفته به مدت ۳۰ دقیقه ورزش متوسط داشته باشید.
   
   Provide the full, well-structured treatment plan for each language in the specified Markdown format.`,
-});
-
-const formulateBilingualTreatmentPlanFlow = ai.defineFlow(
-  {
-    name: 'formulateBilingualTreatmentPlanFlow',
-    inputSchema: FormulateBilingualTreatmentPlanInputSchema,
-    outputSchema: FormulateBilingualTreatmentPlanOutputSchema,
-  },
-  async input => {
-    const {output} = await formulateBilingualTreatmentPlanPrompt(input);
-    return output!;
-  }
-);
+  });
+  const {output} = await formulateBilingualTreatmentPlanPrompt(input);
+  return output!;
+}

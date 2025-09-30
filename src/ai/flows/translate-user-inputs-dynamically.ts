@@ -9,10 +9,15 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type {ApiKeyInput} from '@/lib/types';
 
 const TranslateInputInputSchema = z.object({
   text: z.string().describe('The text to translate.'),
-  targetLanguage: z.enum(['en', 'fa']).describe('The target language for the translation (en for English, fa for Persian).'),
+  targetLanguage: z
+    .enum(['en', 'fa'])
+    .describe(
+      'The target language for the translation (en for English, fa for Persian).'
+    ),
 });
 export type TranslateInputInput = z.infer<typeof TranslateInputInputSchema>;
 
@@ -21,27 +26,18 @@ const TranslateInputOutputSchema = z.object({
 });
 export type TranslateInputOutput = z.infer<typeof TranslateInputOutputSchema>;
 
-export async function translateInput(input: TranslateInputInput): Promise<TranslateInputOutput> {
-  return translateInputFlow(input);
-}
-
-const translateInputPrompt = ai.definePrompt({
-  name: 'translateInputPrompt',
-  input: {schema: TranslateInputInputSchema},
-  output: {schema: TranslateInputOutputSchema},
-  prompt: `You are a medical translation expert. Translate the following text to {{targetLanguage}}, maintaining the original medical context and meaning.  The translation should be accurate and appropriate for use in a medical setting.
+export async function translateInput(
+  input: TranslateInputInput & ApiKeyInput
+): Promise<TranslateInputOutput> {
+  const translateInputPrompt = ai({apiKey: input.apiKey}).definePrompt({
+    name: 'translateInputPrompt',
+    input: {schema: TranslateInputInputSchema},
+    output: {schema: TranslateInputOutputSchema},
+    prompt: `You are a medical translation expert. Translate the following text to {{targetLanguage}}, maintaining the original medical context and meaning.  The translation should be accurate and appropriate for use in a medical setting.
 
 Text to translate: {{{text}}}`,
-});
+  });
 
-const translateInputFlow = ai.defineFlow(
-  {
-    name: 'translateInputFlow',
-    inputSchema: TranslateInputInputSchema,
-    outputSchema: TranslateInputOutputSchema,
-  },
-  async input => {
-    const {output} = await translateInputPrompt(input);
-    return output!;
-  }
-);
+  const {output} = await translateInputPrompt(input);
+  return output!;
+}

@@ -9,30 +9,50 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type {ApiKeyInput} from '@/lib/types';
 
 const SynthesizeBilingualSOAPNoteInputSchema = z.object({
-  patientInformation: z.string().describe('Comprehensive patient details including history, demographics, and relevant medical background.'),
-  answers: z.string().describe('The answers provided by the patient during the medical interview.'),
+  patientInformation: z
+    .string()
+    .describe(
+      'Comprehensive patient details including history, demographics, and relevant medical background.'
+    ),
+  answers: z
+    .string()
+    .describe(
+      'The answers provided by the patient during the medical interview.'
+    ),
 });
 
-export type SynthesizeBilingualSOAPNoteInput = z.infer<typeof SynthesizeBilingualSOAPNoteInputSchema>;
+export type SynthesizeBilingualSOAPNoteInput = z.infer<
+  typeof SynthesizeBilingualSOAPNoteInputSchema
+>;
 
 const SynthesizeBilingualSOAPNoteOutputSchema = z.object({
-  soapNoteEnglish: z.string().describe('The generated SOAP note in English, formatted using Markdown.'),
-  soapNotePersian: z.string().describe('The generated SOAP note in Persian, formatted using Markdown.'),
+  soapNoteEnglish: z
+    .string()
+    .describe(
+      'The generated SOAP note in English, formatted using Markdown.'
+    ),
+  soapNotePersian: z
+    .string()
+    .describe(
+      'The generated SOAP note in Persian, formatted using Markdown.'
+    ),
 });
 
-export type SynthesizeBilingualSOAPNoteOutput = z.infer<typeof SynthesizeBilingualSOAPNoteOutputSchema>;
+export type SynthesizeBilingualSOAPNoteOutput = z.infer<
+  typeof SynthesizeBilingualSOAPNoteOutputSchema
+>;
 
-export async function synthesizeBilingualSOAPNote(input: SynthesizeBilingualSOAPNoteInput): Promise<SynthesizeBilingualSOAPNoteOutput> {
-  return synthesizeBilingualSOAPNoteFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'synthesizeBilingualSOAPNotePrompt',
-  input: {schema: SynthesizeBilingualSOAPNoteInputSchema},
-  output: {schema: SynthesizeBilingualSOAPNoteOutputSchema},
-  prompt: `You are an AI assistant specialized in generating medical SOAP notes in both English and Persian.
+export async function synthesizeBilingualSOAPNote(
+  input: SynthesizeBilingualSOAPNoteInput & ApiKeyInput
+): Promise<SynthesizeBilingualSOAPNoteOutput> {
+  const prompt = ai({apiKey: input.apiKey}).definePrompt({
+    name: 'synthesizeBilingualSOAPNotePrompt',
+    input: {schema: SynthesizeBilingualSOAPNoteInputSchema},
+    output: {schema: SynthesizeBilingualSOAPNoteOutputSchema},
+    prompt: `You are an AI assistant specialized in generating medical SOAP notes in both English and Persian.
 
   Given the following patient information and their answers to medical questions, synthesize a comprehensive SOAP note in both languages. Use Markdown for formatting (headings, lists, bold text).
 
@@ -82,16 +102,8 @@ const prompt = ai.definePrompt({
 
   Ensure your response provides a complete SOAP note in each language with the specified Markdown formatting.
   `,
-});
+  });
 
-const synthesizeBilingualSOAPNoteFlow = ai.defineFlow(
-  {
-    name: 'synthesizeBilingualSOAPNoteFlow',
-    inputSchema: SynthesizeBilingualSOAPNoteInputSchema,
-    outputSchema: SynthesizeBilingualSOAPNoteOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+  const {output} = await prompt(input);
+  return output!;
+}

@@ -1,4 +1,3 @@
-// src/ai/flows/suggest-differential-diagnoses.ts
 'use server';
 
 /**
@@ -11,42 +10,47 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type {ApiKeyInput} from '@/lib/types';
 
 const SuggestDifferentialDiagnosesInputSchema = z.object({
-  patientInformation: z
+  patientInformation: z.string().describe(
+    'The available patient data, including symptoms, medical history, and examination findings.'
+  ),
+  answers: z
     .string()
-    .describe('The available patient data, including symptoms, medical history, and examination findings.'),
-  answers: z.string().describe('A summary of the questions and answers from the patient interview.'),
+    .describe(
+      'A summary of the questions and answers from the patient interview.'
+    ),
 });
 export type SuggestDifferentialDiagnosesInput = z.infer<
   typeof SuggestDifferentialDiagnosesInputSchema
 >;
 
 const SuggestDifferentialDiagnosesOutputSchema = z.object({
-  differentialDiagnoses: z.array(
-    z.object({
-      diagnosisEn: z.string().describe('The differential diagnosis in English.'),
-      diagnosisFa: z.string().describe('The differential diagnosis in Persian.'),
-      rank: z.number().describe('The rank of the differential diagnosis.'),
-    })
-  ).
-describe('A ranked list of potential differential diagnoses in Persian and English.'),
+  differentialDiagnoses: z
+    .array(
+      z.object({
+        diagnosisEn: z.string().describe('The differential diagnosis in English.'),
+        diagnosisFa: z.string().describe('The differential diagnosis in Persian.'),
+        rank: z.number().describe('The rank of the differential diagnosis.'),
+      })
+    )
+    .describe(
+      'A ranked list of potential differential diagnoses in Persian and English.'
+    ),
 });
 export type SuggestDifferentialDiagnosesOutput = z.infer<
   typeof SuggestDifferentialDiagnosesOutputSchema
 >;
 
 export async function suggestDifferentialDiagnoses(
-  input: SuggestDifferentialDiagnosesInput
+  input: SuggestDifferentialDiagnosesInput & ApiKeyInput
 ): Promise<SuggestDifferentialDiagnosesOutput> {
-  return suggestDifferentialDiagnosesFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'suggestDifferentialDiagnosesPrompt',
-  input: {schema: SuggestDifferentialDiagnosesInputSchema},
-  output: {schema: SuggestDifferentialDiagnosesOutputSchema},
-  prompt: `You are an AI assistant that generates a ranked list of potential differential diagnoses in Persian and English based on the available patient data.
+  const prompt = ai({apiKey: input.apiKey}).definePrompt({
+    name: 'suggestDifferentialDiagnosesPrompt',
+    input: {schema: SuggestDifferentialDiagnosesInputSchema},
+    output: {schema: SuggestDifferentialDiagnosesOutputSchema},
+    prompt: `You are an AI assistant that generates a ranked list of potential differential diagnoses in Persian and English based on the available patient data.
 
   Patient Information: {{{patientInformation}}}
   Interview Answers: {{{answers}}}
@@ -55,16 +59,8 @@ const prompt = ai.definePrompt({
 
   The differentialDiagnoses array should contain objects with diagnosisEn, diagnosisFa, and rank fields.
   `,
-});
+  });
 
-const suggestDifferentialDiagnosesFlow = ai.defineFlow(
-  {
-    name: 'suggestDifferentialDiagnosesFlow',
-    inputSchema: SuggestDifferentialDiagnosesInputSchema,
-    outputSchema: SuggestDifferentialDiagnosesOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+  const {output} = await prompt(input);
+  return output!;
+}

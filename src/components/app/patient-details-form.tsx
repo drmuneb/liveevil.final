@@ -59,6 +59,7 @@ type PatientDetailsFormProps = {
   onInvalidApiKey: (file: File) => void;
   pendingFile?: File;
   clearPendingFile: () => void;
+  initialData?: PatientDetails;
 };
 
 const Section = ({ icon, title, description, children, defaultOpen = false }: { icon: React.ReactNode, title: string, description: string, children: React.ReactNode, defaultOpen?: boolean }) => {
@@ -86,14 +87,14 @@ const Section = ({ icon, title, description, children, defaultOpen = false }: { 
     )
 }
 
-export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidApiKey, pendingFile, clearPendingFile }: PatientDetailsFormProps) {
+export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidApiKey, pendingFile, clearPendingFile, initialData }: PatientDetailsFormProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       name: '',
       familyName: '',
       fatherName: '',
@@ -123,6 +124,10 @@ export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidA
   });
 
   const analyzeFile = async (file: File) => {
+    if (!apiKey) {
+      onInvalidApiKey(file);
+      return;
+    }
     const reader = new FileReader();
     reader.onloadend = async () => {
       const dataUri = reader.result as string;
@@ -185,6 +190,12 @@ export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidA
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingFile, apiKey]);
+
+  useEffect(() => {
+    if (initialData) {
+        form.reset(initialData);
+    }
+  }, [initialData, form]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

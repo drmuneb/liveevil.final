@@ -50,6 +50,10 @@ export default function Home() {
   };
   
   const handleInvalidApiKey = (action: PendingAction) => {
+    // If the invalid action is starting the assistant, we need to hide the assistant UI
+    if (action?.type === 'startAssistant') {
+      setPatientDetails(null);
+    }
     setPendingAction(action);
     setIsApiKeyDialogOpen(true);
   }
@@ -74,7 +78,11 @@ export default function Home() {
   }
 
   const handleFormSubmit = (details: PatientDetails) => {
-    setPatientDetails(details);
+    if (!apiKey) {
+      handleInvalidApiKey({ type: 'startAssistant', details });
+    } else {
+      setPatientDetails(details);
+    }
   }
 
 
@@ -96,6 +104,7 @@ export default function Home() {
               onInvalidApiKey={(file) => handleInvalidApiKey({ type: 'analyzeDoc', file })}
               pendingFile={pendingAction?.type === 'analyzeDoc' ? pendingAction.file : undefined}
               clearPendingFile={() => setPendingAction(null)}
+              initialData={pendingAction?.type === 'startAssistant' ? pendingAction.details : undefined}
             />
           ) : (
             <BilingualAssistant 
@@ -125,7 +134,11 @@ export default function Home() {
       />
        <ApiKeyDialog 
         isOpen={isApiKeyDialogOpen}
-        onOpenChange={setIsApiKeyDialogOpen}
+        onOpenChange={(isOpen) => {
+          // Prevent closing the dialog if there's a pending action and no key
+          if (!isOpen && pendingAction && !apiKey) return;
+          setIsApiKeyDialogOpen(isOpen);
+        }}
         onSave={handleSaveApiKey}
         currentKey={apiKey}
       />

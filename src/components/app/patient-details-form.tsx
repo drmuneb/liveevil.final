@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -20,7 +21,7 @@ import { Spinner } from '../ui/spinner';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
-  familyName: z.string().min(1, 'Family Name is required.'),
+  familyName: z.string().optional(),
   fatherName: z.string().optional(),
   dob: z.string().min(1, 'Date of birth is required.'),
   age: z.coerce.number().min(0, 'Age must be a positive number.').optional(),
@@ -292,7 +293,7 @@ export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidA
                   <FormItem><FormLabel>Name * <span className='text-muted-foreground text-xs'>(نام)</span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="familyName" render={({ field }) => (
-                  <FormItem><FormLabel>Family Name * <span className='text-muted-foreground text-xs'>(نام خانوادگی)</span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Family Name <span className='text-muted-foreground text-xs'>(نام خانوادگی)</span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="fatherName" render={({ field }) => (
                   <FormItem><FormLabel>Father's Name <span className='text-muted-foreground text-xs'>(نام پدر)</span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
@@ -377,3 +378,5 @@ export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidA
     </Card>
   );
 }
+
+    

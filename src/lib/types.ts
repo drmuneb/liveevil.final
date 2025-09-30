@@ -1,3 +1,4 @@
+
 import type { GenerateBilingualQuestionsOutput, GenerateBilingualQuestionsInput } from '@/ai/flows/generate-bilingual-questions';
 import type { SuggestDifferentialDiagnosesOutput, SuggestDifferentialDiagnosesInput } from '@/ai/flows/suggest-differential-diagnoses';
 import type { SynthesizeBilingualSOAPNoteOutput, SynthesizeBilingualSOAPNoteInput } from '@/ai/flows/synthesize-bilingual-soap-note';
@@ -11,35 +12,35 @@ export type ApiKeyInput = {
 
 export type PatientDetails = {
   name: string;
-  familyName: string;
-  fatherName: string;
+  familyName?: string;
+  fatherName?: string;
   dob: string;
   age?: number;
   gender: 'male' | 'female' | 'other';
   perspective: 'first-person' | 'third-person';
   
-  ward: string;
-  room: string;
-  bed: string;
+  ward?: string;
+  room?: string;
+  bed?: string;
   dateOfAdmission: string;
-  attendingPhysician: string;
+  attendingPhysician?: string;
 
   chiefComplaint: string;
 
-  bp: string;
-  rr: string;
-  pr: string;
-  spo2: string;
+  bp?: string;
+  rr?: string;
+  pr?: string;
+  spo2?: string;
   
-  eyeColor: string;
-  skinColor: string;
-  bruises: string;
-  rashUlcers: string;
+  eyeColor?: string;
+  skinColor?: string;
+  bruises?: string;
+  rashUlcers?: string;
 
-  pastMedicalHistory: string;
-  pastSurgicalHistory: string;
-  medication: string;
-  familyHistory: string;
+  pastMedicalHistory?: string;
+  pastSurgicalHistory?: string;
+  medication?: string;
+  familyHistory?: string;
 };
 
 export type Message = {
@@ -71,3 +72,5 @@ export type HistoryEntry = {
   ddx: DifferentialDiagnoses;
   treatmentPlan: TreatmentPlan;
 };
+
+    

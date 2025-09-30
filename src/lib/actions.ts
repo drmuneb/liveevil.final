@@ -24,6 +24,18 @@ import {
 } from '@/ai/flows/generate-next-question';
 import type {ApiKeyInput} from '@/lib/types';
 
+function handleError(error: any): { success: false; error: string } {
+    console.error('An AI action failed:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (errorMessage.includes('API key not valid')) {
+        return { success: false, error: 'Invalid API key. Please check your key and try again.' };
+    }
+    
+    return { success: false, error: 'An unexpected error occurred.' };
+}
+
+
 export async function handleGenerateQuestions(
   input: GenerateBilingualQuestionsInput & ApiKeyInput
 ) {
@@ -31,8 +43,7 @@ export async function handleGenerateQuestions(
     const output = await generateBilingualQuestions(input);
     return {success: true, data: output};
   } catch (error) {
-    console.error('Error generating questions:', error);
-    return {success: false, error: 'Failed to generate questions.'};
+    return handleError(error);
   }
 }
 
@@ -43,8 +54,7 @@ export async function handleGenerateNextQuestion(
     const output = await generateNextQuestion(input);
     return {success: true, data: output};
   } catch (error) {
-    console.error('Error generating next question:', error);
-    return {success: false, error: 'Failed to generate next question.'};
+    return handleError(error);
   }
 }
 
@@ -53,8 +63,7 @@ export async function handleTranslate(input: TranslateInputInput & ApiKeyInput) 
     const output = await translateInput(input);
     return {success: true, data: output};
   } catch (error) {
-    console.error('Error translating text:', error);
-    return {success: false, error: 'Failed to translate text.'};
+    return handleError(error);
   }
 }
 
@@ -86,11 +95,7 @@ export async function handleGenerateReport(
       },
     };
   } catch (error) {
-    console.error('Error generating report:', error);
-    return {
-      success: false,
-      error: 'Failed to generate one or more report sections.',
-    };
+    return handleError(error);
   }
 }
 
@@ -101,7 +106,6 @@ export async function handleAnalyzeDocument(
     const output = await analyzePatientDocument(input);
     return {success: true, data: output};
   } catch (error) {
-    console.error('Error analyzing document:', error);
-    return {success: false, error: 'Failed to analyze document.'};
+    return handleError(error);
   }
 }

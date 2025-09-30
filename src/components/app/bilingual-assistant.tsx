@@ -41,6 +41,7 @@ type BilingualAssistantProps = {
   setDdx: React.Dispatch<React.SetStateAction<DifferentialDiagnoses | null>>;
   treatmentPlan: TreatmentPlan | null;
   setTreatmentPlan: React.Dispatch<React.SetStateAction<TreatmentPlan | null>>;
+  onInvalidApiKey: () => void;
 };
 
 export function BilingualAssistant({ 
@@ -54,7 +55,8 @@ export function BilingualAssistant({
   ddx,
   setDdx,
   treatmentPlan,
-  setTreatmentPlan
+  setTreatmentPlan,
+  onInvalidApiKey,
 }: BilingualAssistantProps) {
   const [currentAnswer, setCurrentAnswer] = useState('');
   
@@ -102,11 +104,16 @@ export function BilingualAssistant({
         }]);
       }
     } else {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: result.error || 'Could not generate the next question.',
-      });
+      if (result.error?.includes('Invalid API key')) {
+        toast({ variant: 'destructive', title: 'Invalid API Key', description: "Please check your Google AI API key in the settings." });
+        onInvalidApiKey();
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: result.error || 'Could not generate the next question.',
+        });
+      }
     }
     setIsGenerating(false);
   };
@@ -190,11 +197,16 @@ export function BilingualAssistant({
       saveReportToHistory(result.data);
       toast({ title: 'Report Generated', description: 'SOAP note, DDx, and treatment plan are ready.' });
     } else {
-      toast({
-        variant: 'destructive',
-        title: 'Error Generating Report',
-        description: result.error,
-      });
+       if (result.error?.includes('Invalid API key')) {
+        toast({ variant: 'destructive', title: 'Invalid API Key', description: "Please check your Google AI API key in the settings." });
+        onInvalidApiKey();
+      } else {
+        toast({
+            variant: 'destructive',
+            title: 'Error Generating Report',
+            description: result.error,
+        });
+      }
     }
     setIsGeneratingReport(false);
   };
@@ -209,7 +221,12 @@ export function BilingualAssistant({
           m.id === messageId ? { ...m, translation: result.data!.translatedText } : m
       ));
     } else {
-      toast({ variant: 'destructive', title: 'Translation Failed' });
+       if (result.error?.includes('Invalid API key')) {
+        toast({ variant: 'destructive', title: 'Invalid API Key', description: "Please check your Google AI API key in the settings." });
+        onInvalidApiKey();
+      } else {
+        toast({ variant: 'destructive', title: 'Translation Failed' });
+      }
     }
     setIsTranslating(false);
   }

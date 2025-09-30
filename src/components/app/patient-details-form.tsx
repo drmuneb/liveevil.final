@@ -55,6 +55,7 @@ type PatientDetailsFormProps = {
   onFormSubmit: (data: PatientDetails) => void;
   className?: string;
   apiKey: string;
+  onInvalidApiKey: () => void;
 };
 
 const Section = ({ icon, title, description, children, defaultOpen = false }: { icon: React.ReactNode, title: string, description: string, children: React.ReactNode, defaultOpen?: boolean }) => {
@@ -82,7 +83,7 @@ const Section = ({ icon, title, description, children, defaultOpen = false }: { 
     )
 }
 
-export function PatientDetailsForm({ onFormSubmit, className, apiKey }: PatientDetailsFormProps) {
+export function PatientDetailsForm({ onFormSubmit, className, apiKey, onInvalidApiKey }: PatientDetailsFormProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -118,7 +119,7 @@ export function PatientDetailsForm({ onFormSubmit, className, apiKey }: PatientD
     },
   });
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -165,7 +166,12 @@ export function PatientDetailsForm({ onFormSubmit, className, apiKey }: PatientD
 
           toast({ title: 'Document Analyzed', description: 'Patient details have been extracted.' });
         } else {
-          toast({ variant: 'destructive', title: 'Analysis Failed', description: result.error });
+          if (result.error?.includes('Invalid API key')) {
+            toast({ variant: 'destructive', title: 'Invalid API Key', description: "Please check your Google AI API key in the settings." });
+            onInvalidApiKey();
+          } else {
+            toast({ variant: 'destructive', title: 'Analysis Failed', description: result.error });
+          }
         }
       };
       reader.readAsDataURL(file);

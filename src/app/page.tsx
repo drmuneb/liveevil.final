@@ -70,6 +70,7 @@ export default function Home() {
             <PatientDetailsForm
               onFormSubmit={setPatientDetails}
               apiKey={apiKey}
+              onInvalidApiKey={() => setIsApiKeyDialogOpen(true)}
             />
           ) : (
             <BilingualAssistant 
@@ -84,6 +85,7 @@ export default function Home() {
               setDdx={setDdx}
               treatmentPlan={treatmentPlan}
               setTreatmentPlan={setTreatmentPlan}
+              onInvalidApiKey={() => setIsApiKeyDialogOpen(true)}
             />
           )}
         </div>

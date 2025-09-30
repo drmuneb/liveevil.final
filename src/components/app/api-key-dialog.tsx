@@ -38,6 +38,18 @@ export function ApiKeyDialog({ isOpen, onOpenChange, onSave, currentKey }: ApiKe
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          <div className="text-sm text-muted-foreground">
+              You can get a free API key from{' '}
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Google AI Studio
+              </a>
+              .
+            </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="api-key" className="text-right">
               API Key

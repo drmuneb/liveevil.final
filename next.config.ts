@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  serverComponentsExternalPackages: [
+  serverExternalPackages: [
     '@genkit-ai/googleai',
     '@google-ai/generativelanguage',
     ],
